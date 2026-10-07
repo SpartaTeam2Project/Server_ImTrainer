@@ -26,6 +26,11 @@ public class GlobalExceptionHandler {
         return error(HttpStatus.BAD_REQUEST, "INVALID_TIME");
     }
 
+    @ExceptionHandler(RoundAlreadyInProgressException.class)
+    public ResponseEntity<ErrorResponse> handleRoundAlreadyInProgress(RoundAlreadyInProgressException e) {
+        return error(HttpStatus.BAD_REQUEST, "ROUND_ALREADY_IN_PROGRESS");
+    }
+
     private ResponseEntity<ErrorResponse> error(HttpStatus status, String code) {
         return ResponseEntity.status(status).body(new ErrorResponse(status.value(), code));
     }

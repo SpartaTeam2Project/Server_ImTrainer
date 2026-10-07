@@ -12,16 +12,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/rounds/start")
+@RequestMapping("/rounds")
 @RequiredArgsConstructor
 public class RoundController {
 
     private final RoundService roundService;
 
-    @PostMapping
-    public ResponseEntity<Void> startRound(@Valid @RequestBody RoundStartRequest request) {
+    @PostMapping("/start")
+    public ResponseEntity<Void> startRound() {
         String trainerId = "T0000001";
-        roundService.startRound(trainerId, request.roundStartTime());
+        roundService.startRound(trainerId);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 }
