@@ -1,7 +1,8 @@
-package com.imtrainer.validate.controller;
+package com.imtrainer.round.controller;
 
-import com.imtrainer.validate.dto.RoundStartRequest;
-import com.imtrainer.validate.service.RoundService;
+import com.imtrainer.round.dto.RoundEndRequest;
+import com.imtrainer.round.dto.RoundStartRequest;
+import com.imtrainer.round.service.RoundService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,9 +20,14 @@ public class RoundController {
     private final RoundService roundService;
 
     @PostMapping("/start")
-    public ResponseEntity<Void> startRound() {
-        String trainerId = "T0000001";
-        roundService.startRound(trainerId);
+    public ResponseEntity<Void> startRound(@Valid @RequestBody RoundStartRequest request) {
+        roundService.startRound(request.trainerId());
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @PostMapping("/end")
+    public ResponseEntity<Void> endRound(@Valid @RequestBody RoundEndRequest request) {
+        roundService.endRound(request);
+        return ResponseEntity.ok().build();
     }
 }

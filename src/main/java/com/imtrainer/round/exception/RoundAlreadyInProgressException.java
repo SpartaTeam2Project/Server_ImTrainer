@@ -1,4 +1,4 @@
-package com.imtrainer.validate.exception;
+package com.imtrainer.round.exception;
 
 public class RoundAlreadyInProgressException extends RuntimeException{
 }

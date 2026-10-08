@@ -1,6 +1,6 @@
-package com.imtrainer.validate.exception;
+package com.imtrainer.round.exception;
 
-import com.imtrainer.validate.dto.ErrorResponse;
+import com.imtrainer.round.dto.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -19,6 +19,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException e) {
         return error(HttpStatus.BAD_REQUEST, "MISSING_FIELD");
+    }
+
+    @ExceptionHandler(RoundValidationException.class)
+    public ResponseEntity<ErrorResponse> handleRoundValidation(RoundValidationException e) {
+        return error(HttpStatus.BAD_REQUEST, e.getCode());
     }
 
     @ExceptionHandler(InvalidTimeException.class)
