@@ -2,7 +2,9 @@ name: CI/CD
 
 on:
   push:
-    branches: [YJ_2]   # 지금은 YJ_2 push에서만 실행 (팀 합의 후 dev 등 추가)
+    branches: [YJ_2]   # YJ_2 push: 테스트 + 이미지 업로드 + 배포
+  pull_request:
+    branches: [dev]    # dev로 PR: 테스트만 (이미지 업로드, 배포는 건너뜀)
 
 env:
   AWS_REGION: ap-northeast-2
@@ -13,6 +15,17 @@ jobs:
   # CI: 빌드가 되는지 확인
   build:
     runs-on: ubuntu-latest
+    # 테스트용 MySQL. 이 job 안에서만 잠깐 떴다가 사라짐
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: test
+          MYSQL_DATABASE: game
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -ptest"
+          --health-interval=5s --health-timeout=5s --health-retries=20
     steps:
       - uses: actions/checkout@v4
 
@@ -23,10 +36,24 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Build jar
+      # 테스트가 실패하면 여기서 멈추고 이미지 업로드, 배포는 진행되지 않음
+      - name: Test and build jar
+        env:
+          SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/game?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: test
+          JWT_SECRET: Y2ktdGVzdC1vbmx5LWp3dC1zZWNyZXQtbm90LWZvci1wcm9kISE=   # 테스트 전용 값 (운영 값 아님)
         run: |
           chmod +x gradlew
-          ./gradlew bootJar -x test   # 테스트는 DB/JWT_SECRET이 필요해 일단 제외
+          ./gradlew test bootJar
+
+      - name: Upload test report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: build/reports/tests/test
+          retention-days: 7
 
       - uses: actions/upload-artifact@v4
         with:
@@ -37,6 +64,7 @@ jobs:
   # Docker 이미지를 만들어 ECR에 push
   push-image:
     needs: build
+    if: github.event_name == 'push'   # PR일 때는 건너뜀
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -46,7 +74,7 @@ jobs:
           name: app
           path: build/libs
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v5
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -72,9 +100,10 @@ jobs:
   # 이미지 주소에는 계정 번호와 Secret이 들어가 job 사이로 넘길 수 없으므로 EC2에서 다시 만든다.
   deploy:
     needs: push-image
+    if: github.event_name == 'push'   # PR일 때는 건너뜀
     runs-on: ubuntu-latest
     steps:
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v5
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
