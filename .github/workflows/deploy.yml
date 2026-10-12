@@ -27,14 +27,14 @@ jobs:
           --health-cmd="mysqladmin ping -h localhost -ptest"
           --health-interval=5s --health-timeout=5s --health-retries=20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
 
       # 테스트가 실패하면 여기서 멈추고 이미지 업로드, 배포는 진행되지 않음
       - name: Test and build jar
@@ -49,13 +49,13 @@ jobs:
 
       - name: Upload test report
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: test-report
           path: build/reports/tests/test
           retention-days: 7
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: app
           path: build/libs/app.jar
@@ -67,14 +67,14 @@ jobs:
     if: github.event_name == 'push'   # PR일 때는 건너뜀
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: app
           path: build/libs
 
-      - uses: aws-actions/configure-aws-credentials@v5
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -84,8 +84,8 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       # Runner는 x86, EC2는 ARM(aarch64)이라 두 아키텍처용 이미지를 함께 만든다
-      - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-buildx-action@v4
 
       - name: Build and push image (amd64 + arm64)
         run: |
@@ -103,7 +103,7 @@ jobs:
     if: github.event_name == 'push'   # PR일 때는 건너뜀
     runs-on: ubuntu-latest
     steps:
-      - uses: aws-actions/configure-aws-credentials@v5
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
