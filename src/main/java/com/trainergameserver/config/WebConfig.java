@@ -19,6 +19,7 @@ public class WebConfig implements WebMvcConfigurer {
             "/auth/login",
             "/auth/refresh",
             "/error",
+            "/actuator/health",
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html"

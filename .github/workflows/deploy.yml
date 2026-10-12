@@ -92,13 +92,16 @@ jobs:
           aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $REGISTRY
           docker pull $IMAGE
           docker rm -f ${{ env.CONTAINER_NAME }} 2>/dev/null || true
-          docker run -d --name ${{ env.CONTAINER_NAME }} -p 8080:8080 --env-file ${{ env.ENV_FILE }} --restart unless-stopped $IMAGE
+          # 로그 파일 최대 10MB × 3개까지만 보관 (디스크 가득 참 방지)
+          docker run -d --name ${{ env.CONTAINER_NAME }} -p 8080:8080 --env-file ${{ env.ENV_FILE }} --restart unless-stopped \
+            --log-opt max-size=10m --log-opt max-file=3 $IMAGE
+          # 헬스 체크: /actuator/health 가 200(UP)일 때만 성공, 최대 60초 대기
           for i in $(seq 1 30); do
-            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/auth/login || true)
-            if [ "$code" != "000" ]; then echo "server is up ($code)"; docker image prune -af >/dev/null; exit 0; fi
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/actuator/health || true)
+            if [ "$code" = "200" ]; then echo "server is up (health 200)"; docker image prune -af >/dev/null; exit 0; fi
             sleep 2
           done
-          echo "server did not start"; docker logs --tail 50 ${{ env.CONTAINER_NAME }}; exit 1
+          echo "health check failed (last code: $code)"; docker logs --tail 50 ${{ env.CONTAINER_NAME }}; exit 1
           EOF
           jq -Rs '{commands: (split("\n") | map(select(length > 0))), executionTimeout: ["600"]}' deploy.sh > params.json
 
