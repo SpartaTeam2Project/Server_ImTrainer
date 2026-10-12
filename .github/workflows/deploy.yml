@@ -7,15 +7,16 @@ on:
 env:
   AWS_REGION: ap-northeast-2
   CONTAINER_NAME: imtrainer
+  ENV_FILE: /etc/imtrainer/env   # EC2의 환경변수 파일 (root 소유, 600)
 
 jobs:
-  # CI: 모든 push / PR에서 빌드가 되는지 확인
+  # CI: 빌드가 되는지 확인
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
@@ -33,13 +34,10 @@ jobs:
           path: build/libs/app.jar
           retention-days: 3
 
-  # Docker 이미지를 만들어 ECR에 push (main/dev push일 때만)
+  # Docker 이미지를 만들어 ECR에 push
   push-image:
     needs: build
-    if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    outputs:
-      image: ${{ steps.meta.outputs.image }}
     steps:
       - uses: actions/checkout@v4
 
@@ -57,42 +55,77 @@ jobs:
       - id: ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - id: meta
-        name: Build and push image
+      # Runner는 x86, EC2는 ARM(aarch64)이라 두 아키텍처용 이미지를 함께 만든다
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push image (amd64 + arm64)
         run: |
           IMAGE=${{ steps.ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}
-          docker build -t $IMAGE:${{ github.sha }} -t $IMAGE:${{ github.ref_name }} .
-          docker push $IMAGE:${{ github.sha }}
-          docker push $IMAGE:${{ github.ref_name }}
-          echo "image=$IMAGE:${{ github.sha }}" >> $GITHUB_OUTPUT
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            -t $IMAGE:${{ github.sha }} \
+            -t $IMAGE:${{ github.ref_name }} \
+            --push .
 
-  # CD: dev 브랜치면 EC2에서 새 이미지로 컨테이너 교체
-  deploy-dev:
+  # CD: AWS SSM으로 EC2에 배포 명령 전송 (SSH 키, 22번 포트 불필요)
+  # 이미지 주소에는 계정 번호와 Secret이 들어가 job 사이로 넘길 수 없으므로 EC2에서 다시 만든다.
+  deploy:
     needs: push-image
-    if: github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
     steps:
-      - uses: appleboy/ssh-action@v1.0.3
+      - uses: aws-actions/configure-aws-credentials@v4
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            set -e
-            IMAGE=${{ needs.push-image.outputs.image }}
-            REGISTRY=${IMAGE%%/*}
-            # EC2에 붙은 IAM Role 권한으로 ECR 로그인 (키 저장 불필요)
-            aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin $REGISTRY
-            docker pull $IMAGE
-            docker rm -f ${{ env.CONTAINER_NAME }} 2>/dev/null || true
-            docker run -d --name ${{ env.CONTAINER_NAME }} \
-              -p 8080:8080 \
-              --env-file ~/app/app.env \
-              --restart unless-stopped \
-              $IMAGE
-            for i in $(seq 1 30); do
-              code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/auth/login || true)
-              if [ "$code" != "000" ]; then echo "server is up ($code)"; docker image prune -af >/dev/null; exit 0; fi
-              sleep 2
-            done
-            echo "server did not start"; docker logs --tail 50 ${{ env.CONTAINER_NAME }}; exit 1
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Write deploy script
+        run: |
+          # SSM 명령은 EC2에서 root로 실행되므로 sudo 불필요
+          cat > deploy.sh <<'EOF'
+          set -e
+          REGION=${{ env.AWS_REGION }}
+          ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+          REGISTRY=$ACCOUNT.dkr.ecr.$REGION.amazonaws.com
+          IMAGE=$REGISTRY/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
+          aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $REGISTRY
+          docker pull $IMAGE
+          docker rm -f ${{ env.CONTAINER_NAME }} 2>/dev/null || true
+          docker run -d --name ${{ env.CONTAINER_NAME }} -p 8080:8080 --env-file ${{ env.ENV_FILE }} --restart unless-stopped $IMAGE
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/auth/login || true)
+            if [ "$code" != "000" ]; then echo "server is up ($code)"; docker image prune -af >/dev/null; exit 0; fi
+            sleep 2
+          done
+          echo "server did not start"; docker logs --tail 50 ${{ env.CONTAINER_NAME }}; exit 1
+          EOF
+          jq -Rs '{commands: (split("\n") | map(select(length > 0))), executionTimeout: ["600"]}' deploy.sh > params.json
+
+      - name: Send command via SSM and wait
+        run: |
+          INSTANCE_ID=${{ secrets.EC2_INSTANCE_ID }}
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids $INSTANCE_ID \
+            --document-name AWS-RunShellScript \
+            --comment "deploy ${{ github.sha }}" \
+            --parameters file://params.json \
+            --query Command.CommandId --output text)
+          echo "command id: $COMMAND_ID"
+
+          # 최대 10분 대기
+          for i in $(seq 1 120); do
+            STATUS=$(aws ssm get-command-invocation --command-id $COMMAND_ID --instance-id $INSTANCE_ID \
+              --query Status --output text 2>/dev/null || echo Pending)
+            case $STATUS in
+              Pending|InProgress|Delayed) sleep 5 ;;
+              *) break ;;
+            esac
+          done
+
+          echo "----- stdout -----"
+          aws ssm get-command-invocation --command-id $COMMAND_ID --instance-id $INSTANCE_ID --query StandardOutputContent --output text
+          echo "----- stderr -----"
+          aws ssm get-command-invocation --command-id $COMMAND_ID --instance-id $INSTANCE_ID --query StandardErrorContent --output text
+          echo "status: $STATUS"
+          [ "$STATUS" = "Success" ]

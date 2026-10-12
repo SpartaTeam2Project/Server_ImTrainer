@@ -146,24 +146,36 @@ POST /master-data
 `.github/workflows/deploy.yml`
 
 ```
-git push (YJ_2) → 빌드(bootJar) → Docker 이미지 생성 → AWS ECR push
+git push (YJ_2) → 빌드(bootJar) → Docker 이미지 생성 → AWS ECR push → SSM으로 EC2에 배포 명령 → 컨테이너 교체
 ```
 
 - 현재는 `YJ_2` 브랜치 push에서만 실행됩니다.
-- EC2 배포 단계(`deploy-dev`)는 `dev` 브랜치에서만 동작하도록 되어 있어 지금은 실행되지 않습니다. 팀 합의 후 `on.push.branches`에 `dev`를 추가하면 활성화됩니다.
+- 팀 합의 후 `on.push.branches`에 `dev`를 추가하면 dev push에서도 같은 흐름으로 배포됩니다.
+- 이미지는 `linux/amd64`, `linux/arm64` 두 아키텍처용으로 만듭니다. (dev EC2가 ARM(aarch64) 인스턴스)
+- 배포 단계는 EC2에서 IAM Role로 계정 번호를 조회해 이미지 주소를 만듭니다. (이미지 주소에 Secret이 포함돼 job 사이로 넘길 수 없기 때문)
 - 테스트(`contextLoads`)는 DB와 `JWT_SECRET`이 필요해 CI에서 제외(`-x test`)했습니다.
 
 ### GitHub Secrets
 
 | 이름 | 용도 |
 | --- | --- |
-| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | ECR push용 IAM 사용자 키 |
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | ECR push, SSM 명령 전송용 IAM 사용자 키 |
 | `ECR_REPOSITORY` | ECR 저장소 이름 |
-| `EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY` | EC2 배포용 (deploy-dev 활성화 시) |
+| `EC2_INSTANCE_ID` | 배포할 EC2 인스턴스 ID (`i-...`) |
 
-### EC2 준비 (deploy-dev 활성화 시)
+SSH 키는 사용하지 않습니다. 배포 명령은 AWS SSM(Run Command)으로 전송합니다.
 
-- Docker, AWS CLI 설치
-- ECR 읽기 권한(`AmazonEC2ContainerRegistryReadOnly`)이 있는 IAM Role 연결
-- `~/app/app.env` 작성 (`deploy/app.env.example` 참고, `chmod 600`)
-- 보안그룹에서 GitHub Actions의 SSH(22) 접속 허용
+### IAM 사용자 권한 (GitHub Actions용)
+
+- `AmazonEC2ContainerRegistryPowerUser` (ECR push)
+- SSM 명령 전송: `ssm:SendCommand`, `ssm:GetCommandInvocation`
+
+### EC2 준비
+
+- Docker, AWS CLI 설치 (`sudo dnf install -y docker`, `sudo systemctl enable --now docker`)
+- EC2 IAM Role에 `AmazonEC2ContainerRegistryReadOnly`, `AmazonSSMManagedInstanceCore` 정책 연결
+- Systems Manager → Fleet Manager에서 인스턴스가 Online인지 확인 (Amazon Linux 2023은 SSM Agent 기본 설치)
+- 환경변수 파일 `/etc/imtrainer/env` (root 소유, `chmod 600`, 형식은 `deploy/app.env.example` 참고, 값에 따옴표 금지)
+- 기존 jar 실행용 systemd 서비스는 `sudo systemctl disable --now imtrainer`로 중지 (8080 포트 비우기)
+- 배포에 SSH(22) 포트는 필요 없음
+- 서버는 EC2 인스턴스가 ARM(aarch64)이므로 arm64 이미지로 실행됨
