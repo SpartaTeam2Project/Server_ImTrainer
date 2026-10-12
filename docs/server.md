@@ -175,7 +175,7 @@ SSH 키는 사용하지 않습니다. 배포 명령은 AWS SSM(Run Command)으�
 - Docker, AWS CLI 설치 (`sudo dnf install -y docker`, `sudo systemctl enable --now docker`)
 - EC2 IAM Role에 `AmazonEC2ContainerRegistryReadOnly`, `AmazonSSMManagedInstanceCore` 정책 연결
 - Systems Manager → Fleet Manager에서 인스턴스가 Online인지 확인 (Amazon Linux 2023은 SSM Agent 기본 설치)
-- 환경변수 파일 `/etc/imtrainer/env` (root 소유, `chmod 600`, 형식은 `deploy/app.env.example` 참고, 값에 따옴표 금지)
+- 환경변수는 Parameter Store `/imtrainer/dev/*` (목록은 `deploy/app.env.example` 참고). EC2 역할에 `ssm:GetParametersByPath` 권한 필요
 - 기존 jar 실행용 systemd 서비스는 `sudo systemctl disable --now imtrainer`로 중지 (8080 포트 비우기)
 - 배포에 SSH(22) 포트는 필요 없음
 - 서버는 EC2 인스턴스가 ARM(aarch64)이므로 arm64 이미지로 실행됨

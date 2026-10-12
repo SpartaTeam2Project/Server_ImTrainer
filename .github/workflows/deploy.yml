@@ -7,7 +7,7 @@ on:
 env:
   AWS_REGION: ap-northeast-2
   CONTAINER_NAME: imtrainer
-  ENV_FILE: /etc/imtrainer/env   # EC2의 환경변수 파일 (root 소유, 600)
+  PARAM_PATH: /imtrainer/dev     # Parameter Store 경로. 이 아래 값들이 컨테이너 환경변수가 됨
 
 jobs:
   # CI: 빌드가 되는지 확인
@@ -91,9 +91,18 @@ jobs:
           IMAGE=$REGISTRY/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
           aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $REGISTRY
           docker pull $IMAGE
+          # Parameter Store(PARAM_PATH 아래)에서 값을 읽어 임시 파일로 만들고, 끝나면 삭제 (값은 로그에 찍지 않음)
+          ENV_FILE=$(mktemp /run/imtrainer-env.XXXXXX)
+          trap 'rm -f "$ENV_FILE"' EXIT
+          aws ssm get-parameters-by-path --region $REGION --path ${{ env.PARAM_PATH }} --with-decryption \
+            --query 'Parameters[].[Name,Value]' --output text \
+            | awk -F'\t' '{ n = $1; sub(".*/", "", n); print n "=" $2 }' > "$ENV_FILE"
+          for key in SPRING_PROFILES_ACTIVE DB_USERNAME DB_PASSWORD JWT_SECRET; do
+            grep -q "^$key=" "$ENV_FILE" || { echo "missing parameter: ${{ env.PARAM_PATH }}/$key"; exit 1; }
+          done
           docker rm -f ${{ env.CONTAINER_NAME }} 2>/dev/null || true
           # 로그 파일 최대 10MB × 3개까지만 보관 (디스크 가득 참 방지)
-          docker run -d --name ${{ env.CONTAINER_NAME }} -p 8080:8080 --env-file ${{ env.ENV_FILE }} --restart unless-stopped \
+          docker run -d --name ${{ env.CONTAINER_NAME }} -p 8080:8080 --env-file "$ENV_FILE" --restart unless-stopped \
             --log-opt max-size=10m --log-opt max-file=3 $IMAGE
           # 헬스 체크: /actuator/health 가 200(UP)일 때만 성공, 최대 60초 대기
           for i in $(seq 1 30); do
