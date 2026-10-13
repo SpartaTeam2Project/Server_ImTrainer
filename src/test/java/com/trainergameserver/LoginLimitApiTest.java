@@ -1,6 +1,6 @@
 package com.trainergameserver;
 
-import com.trainergameserver.security.LoginAttemptLimiter;
+import com.trainergameserver.auth.security.LoginAttemptLimiter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -67,6 +67,24 @@ class LoginLimitApiTest extends ApiTestSupport {
         }
         String username = newUsername();
         signup(username);
+        assertEquals(429, login(username).status());
+    }
+
+    @Test
+    @DisplayName("프록시 설정이 없으면 X-Forwarded-For를 위조해도 접속 IP 기준으로 센다")
+    void ignoresForwardedHeaderByDefault() throws Exception {
+        String username = newUsername();
+        signup(username);
+        for (int i = 0; i < 5; i++) {
+            java.net.http.HttpRequest request = java.net.http.HttpRequest
+                    .newBuilder(java.net.URI.create("http://localhost:" + port + "/auth/login"))
+                    .header("Content-Type", "application/json")
+                    .header("X-Forwarded-For", "10.0.0." + i)
+                    .POST(java.net.http.HttpRequest.BodyPublishers.ofString(
+                            "{\"username\":\"" + username + "\",\"password\":\"wrong-password\"}"))
+                    .build();
+            HTTP.send(request, java.net.http.HttpResponse.BodyHandlers.discarding());
+        }
         assertEquals(429, login(username).status());
     }
 

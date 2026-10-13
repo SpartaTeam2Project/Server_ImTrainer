@@ -33,7 +33,7 @@ abstract class ApiTestSupport {
     protected int port;
 
     @Autowired
-    private JdbcTemplate jdbcTemplate;
+    protected JdbcTemplate jdbcTemplate;
 
     private final List<String> createdUsers = new ArrayList<>();
 
@@ -90,6 +90,9 @@ abstract class ApiTestSupport {
     @AfterEach
     void deleteCreatedUsers() {
         for (String username : createdUsers) {
+            for (String table : List.of("player_trainings", "player_currencies", "player_trainers", "player_monsters", "players")) {
+                jdbcTemplate.update("DELETE FROM " + table + " WHERE user_id IN (SELECT id FROM users WHERE username = ?)", username);
+            }
             jdbcTemplate.update("DELETE FROM refresh_tokens WHERE user_id IN (SELECT id FROM users WHERE username = ?)", username);
             jdbcTemplate.update("DELETE FROM users WHERE username = ?", username);
         }

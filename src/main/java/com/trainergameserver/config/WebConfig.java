@@ -1,8 +1,8 @@
 package com.trainergameserver.config;
 
-import com.trainergameserver.security.AuthInterceptor;
-import com.trainergameserver.security.AuthUserArgumentResolver;
-import com.trainergameserver.security.JwtProvider;
+import com.trainergameserver.auth.security.AuthInterceptor;
+import com.trainergameserver.auth.security.AuthUserArgumentResolver;
+import com.trainergameserver.auth.security.JwtProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;

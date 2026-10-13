@@ -36,6 +36,25 @@ public class OpenApiConfig {
             2. `200` → 게임 화면으로 이동
             3. `401` → refresh 후 재호출, refresh 실패 시 로그인 화면으로 이동
 
+            ## 플레이데이터 (3. Player)
+
+            - 로그인 후 `POST /player/load`(본문 없음)로 받습니다. 신규 계정은 `intro.done=false`, 빈 목록, `pocket_dollar` 0입니다.
+            - 쓰기 요청(인트로, 트레이닝 구매·초기화, 트레이너 선택)은 클라가 먼저 계산해 화면에 반영하고 결과를 보냅니다.
+              서버는 같은 마스터데이터로 다시 계산합니다.
+              - 맞으면 `200`과 갱신된 PlayerData 전체 → 그대로 저장
+              - 다르면 `409`와 `{code, message, playerData}` → **playerData로 덮어쓰기(롤백)**
+            - `409 MISMATCH`가 반복되면 마스터데이터가 바뀌었을 수 있으니 `POST /master-data`를 다시 호출합니다.
+
+            | code | 의미 |
+            | --- | --- |
+            | `MISMATCH` | 클라 계산값(cost, refund, balanceAfter, toLevel, currencyId)이 서버와 다름 |
+            | `NOT_ENOUGH_CURRENCY` | 잔액 부족 |
+            | `REQUIREMENT_NOT_MET` | 트레이닝 해금 조건 미충족, 인트로에서 받을 수 없는 트레이너 |
+            | `MAX_LEVEL` | 이미 최대 레벨 |
+            | `NOT_OWNED` | 보유하지 않은 트레이너 선택 |
+            | `INTRO_ALREADY_DONE` | 인트로를 이미 완료함 |
+            | `UNKNOWN_ID` | 마스터데이터에 없는 트레이닝·포켓몬 id |
+
             ## 에러 응답 형식
 
             모든 에러는 `{ "code": "...", "message": "..." }` 형태로 내려가며, 화면에는 `message`를 그대로 표시하면 됩니다.
@@ -53,8 +72,8 @@ public class OpenApiConfig {
             | `UNAUTHORIZED` | 아이디 또는 비밀번호가 일치하지 않습니다. | login |
             | `TOO_MANY_REQUESTS` | 로그인 시도가 너무 많습니다. N분 후 다시 시도해 주세요. | login (429, `Retry-After` 헤더: 초) |
             | `UNAUTHORIZED` | 리프레시 토큰이 유효하지 않거나 만료되었습니다. 다시 로그인해 주세요. | refresh |
-            | `UNAUTHORIZED` | 액세스 토큰이 없습니다. | logout, master-data |
-            | `UNAUTHORIZED` | 액세스 토큰이 유효하지 않거나 만료되었습니다. | logout, master-data |
+            | `UNAUTHORIZED` | 액세스 토큰이 없습니다. | logout, master-data, player, training |
+            | `UNAUTHORIZED` | 액세스 토큰이 유효하지 않거나 만료되었습니다. | logout, master-data, player, training |
 
             ## 토큰 유효시간
 
