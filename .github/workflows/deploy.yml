@@ -81,15 +81,6 @@ jobs:
           name: app
           path: build/libs
 
-      # [임시 디버그] AWS에 보내는 OIDC 토큰의 sub/aud 값 출력 (토큰 원문은 출력하지 않음). 원인 확인 후 삭제
-      - name: Debug OIDC claims
-        run: |
-          TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" | jq -r .value)
-          P=$(echo "$TOKEN" | cut -d. -f2 | tr '_-' '/+')
-          while [ $(( ${#P} % 4 )) -ne 0 ]; do P="$P="; done
-          echo "$P" | base64 -d | jq '{sub, aud, iss, repository, ref}'
-
       # GitHub OIDC로 IAM Role을 받아 임시 자격 증명 사용 (장기 Access Key 없음)
       - uses: aws-actions/configure-aws-credentials@v6
         with:

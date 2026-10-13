@@ -38,6 +38,13 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse("DUPLICATE_USERNAME", e.getMessage()));
     }
 
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<ErrorResponse> handleTooManyRequests(TooManyRequestsException e) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", String.valueOf(e.getRetryAfterSeconds()))
+                .body(new ErrorResponse("TOO_MANY_REQUESTS", e.getMessage()));
+    }
+
     /** 오류가 여러 개면 요청 필드 선언 순서 → 제약 우선순위 순으로 가장 앞선 하나만 내려 줍니다. */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException e) {

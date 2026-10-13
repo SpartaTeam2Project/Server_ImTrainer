@@ -24,12 +24,20 @@ public class RefreshToken {
     @Column(name = "token", nullable = false, unique = true, length = 512)
     private String tokenHash;
 
+    /** 로그인 한 번에서 refresh로 이어지는 토큰 묶음. 재사용이 감지되면 같은 family를 모두 폐기합니다. */
+    @Column(nullable = false, length = 36)
+    private String familyId;
+
     @Column(nullable = false)
     private LocalDateTime expiresAt;
 
-    public RefreshToken(Long userId, String tokenHash, LocalDateTime expiresAt) {
+    /** refresh에 사용한 시각. 사용한 토큰은 만료될 때까지 남겨 두고 재사용을 감지하는 데 씁니다. */
+    private LocalDateTime usedAt;
+
+    public RefreshToken(Long userId, String tokenHash, String familyId, LocalDateTime expiresAt) {
         this.userId = userId;
         this.tokenHash = tokenHash;
+        this.familyId = familyId;
         this.expiresAt = expiresAt;
     }
 }

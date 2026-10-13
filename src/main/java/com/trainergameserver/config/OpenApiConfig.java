@@ -25,6 +25,8 @@ public class OpenApiConfig {
 
             - 로그인 응답의 `accessToken`, `refreshToken`을 모두 기기의 보안 저장소에 저장합니다.
             - refresh 성공 시 응답의 두 토큰을 **모두 새 값으로 교체**합니다. 이전 refreshToken은 재사용할 수 없습니다.
+            - 이미 사용한 refreshToken을 다시 보내면 탈취로 판단해 **그 로그인에서 발급된 토큰을 모두 폐기**합니다.
+              (10초 안의 중복 요청은 401만 반환하고 폐기하지 않습니다.) refresh는 한 번에 하나만 호출하세요.
             - refresh 실패(`401`) 또는 로그아웃 시 저장된 토큰을 모두 삭제하고 로그인 화면으로 이동합니다.
             - 앱을 다시 실행하면 저장된 토큰으로 바로 `POST /master-data`를 호출합니다. 토큰이 없으면 로그인 화면으로 이동합니다.
 
@@ -49,6 +51,7 @@ public class OpenApiConfig {
             | `INVALID_REQUEST` | 요청 본문(JSON) 형식이 올바르지 않습니다. | 본문이 있는 모든 API |
             | `DUPLICATE_USERNAME` | 이미 사용 중인 아이디입니다. | signup |
             | `UNAUTHORIZED` | 아이디 또는 비밀번호가 일치하지 않습니다. | login |
+            | `TOO_MANY_REQUESTS` | 로그인 시도가 너무 많습니다. N분 후 다시 시도해 주세요. | login (429, `Retry-After` 헤더: 초) |
             | `UNAUTHORIZED` | 리프레시 토큰이 유효하지 않거나 만료되었습니다. 다시 로그인해 주세요. | refresh |
             | `UNAUTHORIZED` | 액세스 토큰이 없습니다. | logout, master-data |
             | `UNAUTHORIZED` | 액세스 토큰이 유효하지 않거나 만료되었습니다. | logout, master-data |
@@ -57,6 +60,11 @@ public class OpenApiConfig {
 
             - 액세스 토큰: 30분
             - 리프레시 토큰: 14일 (한 번 사용하면 폐기되고 새 토큰으로 교체)
+
+            ## 로그인 시도 제한
+
+            - 같은 기기(IP)에서 같은 아이디로 5번 실패하면 15분 동안 `429`를 반환합니다. 같은 IP 전체로는 50번입니다.
+            - `429`를 받으면 `message`를 표시하고, `Retry-After` 헤더(초)가 지나기 전에는 재시도하지 않습니다.
             """;
 
     @Bean

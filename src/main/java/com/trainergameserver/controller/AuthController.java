@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,7 +51,8 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    @Operation(summary = "로그인", description = "인증 불필요. 응답의 두 토큰을 저장해 두고 이후 API 호출에 사용합니다.")
+    @Operation(summary = "로그인", description = "인증 불필요. 응답의 두 토큰을 저장해 두고 이후 API 호출에 사용합니다. "
+            + "같은 기기(IP)에서 같은 아이디로 5번 실패하면 15분간 429를 반환합니다.")
     @SecurityRequirements
     @ApiResponse(responseCode = "200", description = "로그인 성공, 토큰 발급")
     @ApiResponse(responseCode = "400", description = "입력값 오류",
@@ -61,14 +63,19 @@ public class AuthController {
     @ApiResponse(responseCode = "401", description = "아이디 또는 비밀번호 불일치",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {
                     @ExampleObject(name = "로그인 실패", value = "{\"code\": \"UNAUTHORIZED\", \"message\": \"아이디 또는 비밀번호가 일치하지 않습니다.\"}")}))
+    @ApiResponse(responseCode = "429", description = "로그인 실패가 반복되어 일시 차단됨. Retry-After 헤더(초) 뒤에 다시 시도",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {
+                    @ExampleObject(name = "시도 제한", value = "{\"code\": \"TOO_MANY_REQUESTS\", \"message\": \"로그인 시도가 너무 많습니다. 15분 후 다시 시도해 주세요.\"}")}))
     @PostMapping("/login")
-    public TokenResponse login(@Valid @RequestBody LoginRequest request) {
-        return authService.login(request);
+    public TokenResponse login(@Valid @RequestBody LoginRequest request,
+                               @Parameter(hidden = true) HttpServletRequest httpRequest) {
+        return authService.login(request, httpRequest.getRemoteAddr());
     }
 
     @Operation(summary = "액세스 토큰 재발급",
             description = "인증 불필요. 다른 API가 401을 반환했을 때 호출합니다. "
-                    + "성공 시 두 토큰을 모두 새 값으로 교체하세요. 사용한 리프레시 토큰은 즉시 폐기되어 재사용할 수 없습니다. "
+                    + "성공 시 두 토큰을 모두 새 값으로 교체하세요. 사용한 리프레시 토큰은 다시 쓸 수 없고, "
+                    + "이미 사용한 토큰이 다시 오면 탈취로 보고 그 로그인에서 발급된 토큰을 모두 폐기합니다. "
                     + "실패(401) 시 재시도하지 말고 로그인 화면으로 이동합니다.")
     @SecurityRequirements
     @ApiResponse(responseCode = "200", description = "재발급 성공 → 원래 요청 재호출")
