@@ -1,0 +1,538 @@
+{
+    "monsters": [
+        {
+            "id": 1,
+            "name": "이상해씨",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 4,
+            "name": "파이리",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 7,
+            "name": "꼬부기",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 10,
+            "name": "캐터피",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 13,
+            "name": "뿔충이",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 16,
+            "name": "구구",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 19,
+            "name": "꼬렛",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 23,
+            "name": "아보",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 41,
+            "name": "주뱃",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 43,
+            "name": "뚜벅쵸",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 50,
+            "name": "디그다",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 52,
+            "name": "나옹",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 54,
+            "name": "고라파덕",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 56,
+            "name": "망키",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 60,
+            "name": "발챙이",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 63,
+            "name": "캐이시",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 66,
+            "name": "알통몬",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 69,
+            "name": "모다피",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 74,
+            "name": "꼬마돌",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 79,
+            "name": "야돈",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 81,
+            "name": "코일",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 83,
+            "name": "파오리",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 86,
+            "name": "쥬쥬",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 88,
+            "name": "질퍽이",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 90,
+            "name": "셀러",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 92,
+            "name": "고오스",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 95,
+            "name": "롱스톤",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 98,
+            "name": "크랩",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 102,
+            "name": "아라리",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 104,
+            "name": "탕구리",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 109,
+            "name": "또가스",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 111,
+            "name": "뿔카노",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 116,
+            "name": "쏘드라",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 120,
+            "name": "별가사리",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 123,
+            "name": "스라크",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 129,
+            "name": "잉어킹",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 131,
+            "name": "라프라스",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 133,
+            "name": "이브이",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 137,
+            "name": "폴리곤",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 142,
+            "name": "프테라",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 144,
+            "name": "프리져",
+            "generation": 1,
+            "legendary": true
+        },
+        {
+            "id": 145,
+            "name": "썬더",
+            "generation": 1,
+            "legendary": true
+        },
+        {
+            "id": 146,
+            "name": "파이어",
+            "generation": 1,
+            "legendary": true
+        },
+        {
+            "id": 147,
+            "name": "미뇽",
+            "generation": 1,
+            "legendary": false
+        },
+        {
+            "id": 150,
+            "name": "뮤츠",
+            "generation": 1,
+            "legendary": true
+        },
+        {
+            "id": 151,
+            "name": "뮤",
+            "generation": 1,
+            "legendary": true
+        },
+        {
+            "id": 152,
+            "name": "치코리타",
+            "generation": 2,
+            "legendary": false
+        },
+        {
+            "id": 155,
+            "name": "브케인",
+            "generation": 2,
+            "legendary": false
+        },
+        {
+            "id": 158,
+            "name": "리아코",
+            "generation": 2,
+            "legendary": false
+        },
+        {
+            "id": 172,
+            "name": "피츄",
+            "generation": 2,
+            "legendary": false
+        },
+        {
+            "id": 173,
+            "name": "삐",
+            "generation": 2,
+            "legendary": false
+        },
+        {
+            "id": 174,
+            "name": "푸푸린",
+            "generation": 2,
+            "legendary": false
+        },
+        {
+            "id": 175,
+            "name": "토게피",
+            "generation": 2,
+            "legendary": false
+        },
+        {
+            "id": 179,
+            "name": "메리프",
+            "generation": 2,
+            "legendary": false
+        },
+        {
+            "id": 214,
+            "name": "헤라크로스",
+            "generation": 2,
+            "legendary": false
+        },
+        {
+            "id": 216,
+            "name": "깜지곰",
+            "generation": 2,
+            "legendary": false
+        },
+        {
+            "id": 228,
+            "name": "델빌",
+            "generation": 2,
+            "legendary": false
+        },
+        {
+            "id": 236,
+            "name": "배루키",
+            "generation": 2,
+            "legendary": false
+        },
+        {
+            "id": 239,
+            "name": "에레키드",
+            "generation": 2,
+            "legendary": false
+        },
+        {
+            "id": 240,
+            "name": "마그비",
+            "generation": 2,
+            "legendary": false
+        },
+        {
+            "id": 241,
+            "name": "밀탱크",
+            "generation": 2,
+            "legendary": false
+        },
+        {
+            "id": 243,
+            "name": "라이코",
+            "generation": 2,
+            "legendary": true
+        },
+        {
+            "id": 244,
+            "name": "앤테이",
+            "generation": 2,
+            "legendary": true
+        },
+        {
+            "id": 245,
+            "name": "스이쿤",
+            "generation": 2,
+            "legendary": true
+        },
+        {
+            "id": 246,
+            "name": "애버라스",
+            "generation": 2,
+            "legendary": false
+        },
+        {
+            "id": 249,
+            "name": "루기아",
+            "generation": 2,
+            "legendary": true
+        },
+        {
+            "id": 250,
+            "name": "칠색조",
+            "generation": 2,
+            "legendary": true
+        },
+        {
+            "id": 251,
+            "name": "세레비",
+            "generation": 2,
+            "legendary": true
+        },
+        {
+            "id": 387,
+            "name": "모부기",
+            "generation": 4,
+            "legendary": false
+        },
+        {
+            "id": 390,
+            "name": "불꽃숭이",
+            "generation": 4,
+            "legendary": false
+        },
+        {
+            "id": 393,
+            "name": "팽도리",
+            "generation": 4,
+            "legendary": false
+        },
+        {
+            "id": 396,
+            "name": "찌르꼬",
+            "generation": 4,
+            "legendary": false
+        },
+        {
+            "id": 403,
+            "name": "꼬링크",
+            "generation": 4,
+            "legendary": false
+        },
+        {
+            "id": 427,
+            "name": "이어롤",
+            "generation": 4,
+            "legendary": false
+        },
+        {
+            "id": 440,
+            "name": "핑복",
+            "generation": 4,
+            "legendary": false
+        },
+        {
+            "id": 443,
+            "name": "딥상어동",
+            "generation": 4,
+            "legendary": false
+        },
+        {
+            "id": 446,
+            "name": "먹고자",
+            "generation": 4,
+            "legendary": false
+        },
+        {
+            "id": 447,
+            "name": "리오르",
+            "generation": 4,
+            "legendary": false
+        },
+        {
+            "id": 453,
+            "name": "삐딱구리",
+            "generation": 4,
+            "legendary": false
+        },
+        {
+            "id": 459,
+            "name": "눈쓰개",
+            "generation": 4,
+            "legendary": false
+        },
+        {
+            "id": 479,
+            "name": "로토무",
+            "generation": 4,
+            "legendary": false
+        },
+        {
+            "id": 483,
+            "name": "디아루가",
+            "generation": 4,
+            "legendary": true
+        },
+        {
+            "id": 484,
+            "name": "펄기아",
+            "generation": 4,
+            "legendary": true
+        },
+        {
+            "id": 485,
+            "name": "히드런",
+            "generation": 4,
+            "legendary": true
+        },
+        {
+            "id": 486,
+            "name": "레지기가스",
+            "generation": 4,
+            "legendary": true
+        },
+        {
+            "id": 487,
+            "name": "기라티나",
+            "generation": 4,
+            "legendary": true
+        },
+        {
+            "id": 488,
+            "name": "크레세리아",
+            "generation": 4,
+            "legendary": true
+        },
+        {
+            "id": 491,
+            "name": "다크라이",
+            "generation": 4,
+            "legendary": true
+        },
+        {
+            "id": 493,
+            "name": "아르세우스",
+            "generation": 4,
+            "legendary": true
+        }
+    ]
+}

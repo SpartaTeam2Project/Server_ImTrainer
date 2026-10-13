@@ -1,0 +1,819 @@
+{
+    "trainings": [
+        {
+            "id": 0,
+            "key": "Experience",
+            "title": "경험부적",
+            "category": 2,
+            "row": 0,
+            "column": 0,
+            "valueDisplay": 0,
+            "requiredCategory": 2,
+            "requiredCategoryLevel": 0,
+            "requiredTrainingId": -1,
+            "requiredTrainingLevel": 0,
+            "levels": [
+                {
+                    "level": 1,
+                    "value": 0.15,
+                    "cost": 650
+                },
+                {
+                    "level": 2,
+                    "value": 0.2,
+                    "cost": 1500
+                },
+                {
+                    "level": 3,
+                    "value": 0.25,
+                    "cost": 3300
+                },
+                {
+                    "level": 4,
+                    "value": 0.3,
+                    "cost": 7200
+                },
+                {
+                    "level": 5,
+                    "value": 0.35,
+                    "cost": 15000
+                }
+            ]
+        },
+        {
+            "id": 1,
+            "key": "MoveSpeed",
+            "title": "자전거",
+            "category": 1,
+            "row": 0,
+            "column": 1,
+            "valueDisplay": 0,
+            "requiredCategory": 1,
+            "requiredCategoryLevel": 0,
+            "requiredTrainingId": -1,
+            "requiredTrainingLevel": 0,
+            "levels": [
+                {
+                    "level": 1,
+                    "value": 0.03,
+                    "cost": 260
+                },
+                {
+                    "level": 2,
+                    "value": 0.06,
+                    "cost": 650
+                },
+                {
+                    "level": 3,
+                    "value": 0.1,
+                    "cost": 1500
+                },
+                {
+                    "level": 4,
+                    "value": 0.15,
+                    "cost": 7200
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "key": "LastStand",
+            "title": "기합의 띠",
+            "category": 1,
+            "row": 1,
+            "column": 0,
+            "valueDisplay": 5,
+            "requiredCategory": 1,
+            "requiredCategoryLevel": 3,
+            "requiredTrainingId": -1,
+            "requiredTrainingLevel": 0,
+            "levels": [
+                {
+                    "level": 1,
+                    "value": 0.01,
+                    "cost": 260
+                },
+                {
+                    "level": 2,
+                    "value": 0.02,
+                    "cost": 7200
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "key": "StrictSelection",
+            "title": "레드 카드",
+            "category": 3,
+            "row": 0,
+            "column": 0,
+            "valueDisplay": 2,
+            "requiredCategory": 0,
+            "requiredCategoryLevel": 2,
+            "requiredTrainingId": -1,
+            "requiredTrainingLevel": 0,
+            "levels": [
+                {
+                    "level": 1,
+                    "value": 1.0,
+                    "cost": 260
+                },
+                {
+                    "level": 2,
+                    "value": 2.0,
+                    "cost": 650
+                },
+                {
+                    "level": 3,
+                    "value": 3.0,
+                    "cost": 7200
+                }
+            ]
+        },
+        {
+            "id": 4,
+            "key": "MaxHp",
+            "title": "HP 훈련",
+            "category": 1,
+            "row": 0,
+            "column": 0,
+            "valueDisplay": 0,
+            "requiredCategory": 1,
+            "requiredCategoryLevel": 0,
+            "requiredTrainingId": -1,
+            "requiredTrainingLevel": 0,
+            "levels": [
+                {
+                    "level": 1,
+                    "value": 0.05,
+                    "cost": 260
+                },
+                {
+                    "level": 2,
+                    "value": 0.1,
+                    "cost": 650
+                },
+                {
+                    "level": 3,
+                    "value": 0.15,
+                    "cost": 1500
+                },
+                {
+                    "level": 4,
+                    "value": 0.2,
+                    "cost": 3300
+                },
+                {
+                    "level": 5,
+                    "value": 0.3,
+                    "cost": 7200
+                }
+            ]
+        },
+        {
+            "id": 5,
+            "key": "ShardBonus",
+            "title": "부적 금화",
+            "category": 2,
+            "row": 0,
+            "column": 1,
+            "valueDisplay": 0,
+            "requiredCategory": 2,
+            "requiredCategoryLevel": 0,
+            "requiredTrainingId": -1,
+            "requiredTrainingLevel": 0,
+            "levels": [
+                {
+                    "level": 1,
+                    "value": 0.1,
+                    "cost": 260
+                },
+                {
+                    "level": 2,
+                    "value": 0.2,
+                    "cost": 650
+                },
+                {
+                    "level": 3,
+                    "value": 0.3,
+                    "cost": 1500
+                },
+                {
+                    "level": 4,
+                    "value": 0.4,
+                    "cost": 3300
+                },
+                {
+                    "level": 5,
+                    "value": 0.5,
+                    "cost": 7200
+                }
+            ]
+        },
+        {
+            "id": 6,
+            "key": "Attack",
+            "title": "공격 훈련",
+            "category": 0,
+            "row": 0,
+            "column": 0,
+            "valueDisplay": 0,
+            "requiredCategory": 0,
+            "requiredCategoryLevel": 0,
+            "requiredTrainingId": -1,
+            "requiredTrainingLevel": 0,
+            "levels": [
+                {
+                    "level": 1,
+                    "value": 0.03,
+                    "cost": 260
+                },
+                {
+                    "level": 2,
+                    "value": 0.06,
+                    "cost": 650
+                },
+                {
+                    "level": 3,
+                    "value": 0.1,
+                    "cost": 1500
+                },
+                {
+                    "level": 4,
+                    "value": 0.15,
+                    "cost": 3300
+                },
+                {
+                    "level": 5,
+                    "value": 0.2,
+                    "cost": 7200
+                }
+            ]
+        },
+        {
+            "id": 8,
+            "key": "PreparedChoice",
+            "title": "여행용 트렁크",
+            "category": 3,
+            "row": 0,
+            "column": 1,
+            "valueDisplay": 2,
+            "requiredCategory": 0,
+            "requiredCategoryLevel": 3,
+            "requiredTrainingId": -1,
+            "requiredTrainingLevel": 0,
+            "levels": [
+                {
+                    "level": 1,
+                    "value": 1.0,
+                    "cost": 650
+                },
+                {
+                    "level": 2,
+                    "value": 2.0,
+                    "cost": 3600
+                },
+                {
+                    "level": 3,
+                    "value": 3.0,
+                    "cost": 7200
+                }
+            ]
+        },
+        {
+            "id": 9,
+            "key": "QuickClaw",
+            "title": "선제공격손톱",
+            "category": 0,
+            "row": 0,
+            "column": 2,
+            "valueDisplay": 1,
+            "requiredCategory": 0,
+            "requiredCategoryLevel": 1,
+            "requiredTrainingId": -1,
+            "requiredTrainingLevel": 0,
+            "levels": [
+                {
+                    "level": 1,
+                    "value": 0.04,
+                    "cost": 260
+                },
+                {
+                    "level": 2,
+                    "value": 0.08,
+                    "cost": 650
+                },
+                {
+                    "level": 3,
+                    "value": 0.12,
+                    "cost": 7200
+                }
+            ]
+        },
+        {
+            "id": 10,
+            "key": "WideLens",
+            "title": "광각렌즈",
+            "category": 0,
+            "row": 0,
+            "column": 1,
+            "valueDisplay": 0,
+            "requiredCategory": 0,
+            "requiredCategoryLevel": 3,
+            "requiredTrainingId": -1,
+            "requiredTrainingLevel": 0,
+            "levels": [
+                {
+                    "level": 1,
+                    "value": 0.05,
+                    "cost": 260
+                },
+                {
+                    "level": 2,
+                    "value": 0.1,
+                    "cost": 650
+                },
+                {
+                    "level": 3,
+                    "value": 0.15,
+                    "cost": 7200
+                }
+            ]
+        },
+        {
+            "id": 11,
+            "key": "Leftovers",
+            "title": "먹다남은음식",
+            "category": 1,
+            "row": 0,
+            "column": 2,
+            "valueDisplay": 0,
+            "requiredCategory": 1,
+            "requiredCategoryLevel": 1,
+            "requiredTrainingId": -1,
+            "requiredTrainingLevel": 0,
+            "levels": [
+                {
+                    "level": 1,
+                    "value": 0.005,
+                    "cost": 260
+                },
+                {
+                    "level": 2,
+                    "value": 0.01,
+                    "cost": 650
+                },
+                {
+                    "level": 3,
+                    "value": 0.015,
+                    "cost": 3300
+                },
+                {
+                    "level": 4,
+                    "value": 0.02,
+                    "cost": 7200
+                }
+            ]
+        },
+        {
+            "id": 12,
+            "key": "Repel",
+            "title": "벌레회피스프레이",
+            "category": 1,
+            "row": 1,
+            "column": 2,
+            "valueDisplay": 4,
+            "requiredCategory": 1,
+            "requiredCategoryLevel": 3,
+            "requiredTrainingId": -1,
+            "requiredTrainingLevel": 0,
+            "levels": [
+                {
+                    "level": 1,
+                    "value": 0.25,
+                    "cost": 1500
+                },
+                {
+                    "level": 2,
+                    "value": 0.5,
+                    "cost": 3600
+                },
+                {
+                    "level": 3,
+                    "value": 0.8,
+                    "cost": 7200
+                }
+            ]
+        },
+        {
+            "id": 13,
+            "key": "AssaultVest",
+            "title": "돌격조끼",
+            "category": 1,
+            "row": 1,
+            "column": 1,
+            "valueDisplay": 1,
+            "requiredCategory": 1,
+            "requiredCategoryLevel": 3,
+            "requiredTrainingId": -1,
+            "requiredTrainingLevel": 0,
+            "levels": [
+                {
+                    "level": 1,
+                    "value": 0.04,
+                    "cost": 260
+                },
+                {
+                    "level": 2,
+                    "value": 0.08,
+                    "cost": 650
+                },
+                {
+                    "level": 3,
+                    "value": 0.12,
+                    "cost": 7200
+                }
+            ]
+        },
+        {
+            "id": 14,
+            "key": "Magnet",
+            "title": "자석",
+            "category": 2,
+            "row": 0,
+            "column": 2,
+            "valueDisplay": 0,
+            "requiredCategory": 2,
+            "requiredCategoryLevel": 0,
+            "requiredTrainingId": -1,
+            "requiredTrainingLevel": 0,
+            "levels": [
+                {
+                    "level": 1,
+                    "value": 0.15,
+                    "cost": 260
+                },
+                {
+                    "level": 2,
+                    "value": 0.3,
+                    "cost": 650
+                },
+                {
+                    "level": 3,
+                    "value": 0.5,
+                    "cost": 7200
+                }
+            ]
+        },
+        {
+            "id": 15,
+            "key": "Potion",
+            "title": "상처약",
+            "category": 2,
+            "row": 1,
+            "column": 0,
+            "valueDisplay": 0,
+            "requiredCategory": 2,
+            "requiredCategoryLevel": 2,
+            "requiredTrainingId": -1,
+            "requiredTrainingLevel": 0,
+            "levels": [
+                {
+                    "level": 1,
+                    "value": 0.2,
+                    "cost": 260
+                },
+                {
+                    "level": 2,
+                    "value": 0.4,
+                    "cost": 650
+                },
+                {
+                    "level": 3,
+                    "value": 0.6,
+                    "cost": 7200
+                }
+            ]
+        },
+        {
+            "id": 16,
+            "key": "Coupon",
+            "title": "할인쿠폰",
+            "category": 2,
+            "row": 1,
+            "column": 1,
+            "valueDisplay": 2,
+            "requiredCategory": 2,
+            "requiredCategoryLevel": 2,
+            "requiredTrainingId": -1,
+            "requiredTrainingLevel": 0,
+            "levels": [
+                {
+                    "level": 1,
+                    "value": 1.0,
+                    "cost": 260
+                },
+                {
+                    "level": 2,
+                    "value": 2.0,
+                    "cost": 650
+                },
+                {
+                    "level": 3,
+                    "value": 3.0,
+                    "cost": 7200
+                }
+            ]
+        },
+        {
+            "id": 17,
+            "key": "Revive",
+            "title": "기력의조각",
+            "category": 1,
+            "row": 2,
+            "column": 0,
+            "valueDisplay": 2,
+            "requiredCategory": 1,
+            "requiredCategoryLevel": 8,
+            "requiredTrainingId": -1,
+            "requiredTrainingLevel": 0,
+            "levels": [
+                {
+                    "level": 1,
+                    "value": 1.0,
+                    "cost": 3600
+                },
+                {
+                    "level": 2,
+                    "value": 2.0,
+                    "cost": 7200
+                }
+            ]
+        },
+        {
+            "id": 18,
+            "key": "Dowsing",
+            "title": "다우징머신",
+            "category": 3,
+            "row": 0,
+            "column": 2,
+            "valueDisplay": 2,
+            "requiredCategory": 0,
+            "requiredCategoryLevel": 5,
+            "requiredTrainingId": -1,
+            "requiredTrainingLevel": 0,
+            "levels": [
+                {
+                    "level": 1,
+                    "value": 1.0,
+                    "cost": 7200
+                }
+            ]
+        },
+        {
+            "id": 19,
+            "key": "HappyEgg",
+            "title": "행복의알",
+            "category": 2,
+            "row": 2,
+            "column": 2,
+            "valueDisplay": 2,
+            "requiredCategory": 2,
+            "requiredCategoryLevel": 8,
+            "requiredTrainingId": -1,
+            "requiredTrainingLevel": 0,
+            "levels": [
+                {
+                    "level": 1,
+                    "value": 1.0,
+                    "cost": 260
+                },
+                {
+                    "level": 2,
+                    "value": 2.0,
+                    "cost": 650
+                },
+                {
+                    "level": 3,
+                    "value": 3.0,
+                    "cost": 7200
+                }
+            ]
+        },
+        {
+            "id": 20,
+            "key": "FreeCapture",
+            "title": "포획부적",
+            "category": 2,
+            "row": 1,
+            "column": 2,
+            "valueDisplay": 5,
+            "requiredCategory": 2,
+            "requiredCategoryLevel": 2,
+            "requiredTrainingId": -1,
+            "requiredTrainingLevel": 0,
+            "levels": [
+                {
+                    "level": 1,
+                    "value": 0.05,
+                    "cost": 260
+                },
+                {
+                    "level": 2,
+                    "value": 0.1,
+                    "cost": 650
+                },
+                {
+                    "level": 3,
+                    "value": 0.15,
+                    "cost": 7200
+                }
+            ]
+        },
+        {
+            "id": 21,
+            "key": "AugmentGrade",
+            "title": "금색왕관",
+            "category": 3,
+            "row": 1,
+            "column": 0,
+            "valueDisplay": 0,
+            "requiredCategory": 0,
+            "requiredCategoryLevel": 4,
+            "requiredTrainingId": -1,
+            "requiredTrainingLevel": 0,
+            "levels": [
+                {
+                    "level": 1,
+                    "value": 0.25,
+                    "cost": 260
+                },
+                {
+                    "level": 2,
+                    "value": 0.5,
+                    "cost": 650
+                },
+                {
+                    "level": 3,
+                    "value": 0.75,
+                    "cost": 3600
+                },
+                {
+                    "level": 4,
+                    "value": 1.0,
+                    "cost": 7200
+                }
+            ]
+        },
+        {
+            "id": 22,
+            "key": "BallDrop",
+            "title": "애프리콘상자",
+            "category": 2,
+            "row": 2,
+            "column": 0,
+            "valueDisplay": 0,
+            "requiredCategory": 2,
+            "requiredCategoryLevel": 5,
+            "requiredTrainingId": -1,
+            "requiredTrainingLevel": 0,
+            "levels": [
+                {
+                    "level": 1,
+                    "value": 0.1,
+                    "cost": 260
+                },
+                {
+                    "level": 2,
+                    "value": 0.2,
+                    "cost": 650
+                },
+                {
+                    "level": 3,
+                    "value": 0.3,
+                    "cost": 7200
+                }
+            ]
+        },
+        {
+            "id": 23,
+            "key": "DollarDrop",
+            "title": "동전케이스",
+            "category": 2,
+            "row": 2,
+            "column": 1,
+            "valueDisplay": 0,
+            "requiredCategory": 2,
+            "requiredCategoryLevel": 5,
+            "requiredTrainingId": -1,
+            "requiredTrainingLevel": 0,
+            "levels": [
+                {
+                    "level": 1,
+                    "value": 0.1,
+                    "cost": 260
+                },
+                {
+                    "level": 2,
+                    "value": 0.2,
+                    "cost": 650
+                },
+                {
+                    "level": 3,
+                    "value": 0.3,
+                    "cost": 7200
+                }
+            ]
+        },
+        {
+            "id": 24,
+            "key": "ShinyRate",
+            "title": "빛나는부적",
+            "category": 3,
+            "row": 1,
+            "column": 2,
+            "valueDisplay": 0,
+            "requiredCategory": 2,
+            "requiredCategoryLevel": 8,
+            "requiredTrainingId": -1,
+            "requiredTrainingLevel": 0,
+            "levels": [
+                {
+                    "level": 1,
+                    "value": 0.5,
+                    "cost": 260
+                },
+                {
+                    "level": 2,
+                    "value": 1.0,
+                    "cost": 7200
+                }
+            ]
+        },
+        {
+            "id": 25,
+            "key": "MegaUnlock",
+            "title": "키스톤",
+            "category": 3,
+            "row": 2,
+            "column": 0,
+            "valueDisplay": 3,
+            "requiredCategory": 3,
+            "requiredCategoryLevel": 3,
+            "requiredTrainingId": -1,
+            "requiredTrainingLevel": 0,
+            "levels": [
+                {
+                    "level": 1,
+                    "value": 1.0,
+                    "cost": 7200
+                }
+            ]
+        },
+        {
+            "id": 26,
+            "key": "GmaxUnlock",
+            "title": "다이맥스밴드",
+            "category": 3,
+            "row": 2,
+            "column": 1,
+            "valueDisplay": 3,
+            "requiredCategory": 3,
+            "requiredCategoryLevel": 3,
+            "requiredTrainingId": 25,
+            "requiredTrainingLevel": 1,
+            "levels": [
+                {
+                    "level": 1,
+                    "value": 1.0,
+                    "cost": 7200
+                }
+            ]
+        },
+        {
+            "id": 27,
+            "key": "StarterSlot",
+            "title": "포켓몬박스링크",
+            "category": 3,
+            "row": 1,
+            "column": 1,
+            "valueDisplay": 2,
+            "requiredCategory": 2,
+            "requiredCategoryLevel": 6,
+            "requiredTrainingId": -1,
+            "requiredTrainingLevel": 0,
+            "levels": [
+                {
+                    "level": 1,
+                    "value": 1.0,
+                    "cost": 260
+                },
+                {
+                    "level": 2,
+                    "value": 2.0,
+                    "cost": 7200
+                }
+            ]
+        }
+    ]
+}

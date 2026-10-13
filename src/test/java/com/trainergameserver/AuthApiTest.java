@@ -72,6 +72,9 @@ class AuthApiTest extends ApiTestSupport {
         Res reused = post("/auth/refresh", Map.of("refreshToken", oldRefresh));
         assertEquals(401, reused.status());
         assertEquals("UNAUTHORIZED", reused.str("code"));
+
+        // 유예 시간(10초) 안의 재사용은 동시 요청으로 보고, 새로 받은 토큰은 그대로 쓸 수 있다
+        assertEquals(200, post("/auth/refresh", Map.of("refreshToken", refreshed.str("refreshToken"))).status());
     }
 
     @Test

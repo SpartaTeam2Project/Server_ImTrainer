@@ -1,0 +1,18 @@
+{
+    "moveSpeed": 2.5,
+    "damageMultiplier": 1.0,
+    "magnetRadius": 1.0,
+    "xpMultiplier": 1.0,
+    "hpRegen": 0.0,
+    "cooldownMultiplier": 1.0,
+    "projectileSpeedMultiplier": 1.0,
+    "projectileMultiplier": 1.0,
+    "sizeMultiplier": 1.0,
+    "durationMultiplier": 1.0,
+    "invincibleSeconds": 0.0,
+    "maxHealth": 30.0,
+    "reviveHealthRatio": 0.5,
+    "reviveInvincibleSeconds": 1.5,
+    "baseRequiredXp": 5.0,
+    "requiredGrowth": 1.25
+}

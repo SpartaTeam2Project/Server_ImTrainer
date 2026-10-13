@@ -1,0 +1,32 @@
+package com.trainergameserver.auth.repository;
+
+import com.trainergameserver.auth.entity.RefreshToken;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
+
+public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {
+
+    Optional<RefreshToken> findByTokenHash(String tokenHash);
+
+    /**
+     * 아직 사용하지 않았고 만료되지 않은 토큰을 사용 처리하고, 바뀐 건수를 돌려줍니다.
+     * 같은 토큰으로 동시에 요청이 들어와도 DB 행 잠금 덕분에 한 요청만 1을 받고 나머지는 0을 받습니다.
+     */
+    @Modifying
+    @Query("update RefreshToken t set t.usedAt = :now "
+            + "where t.tokenHash = :tokenHash and t.usedAt is null and t.expiresAt > :now")
+    int markUsed(@Param("tokenHash") String tokenHash, @Param("now") LocalDateTime now);
+
+    @Modifying
+    @Query("delete from RefreshToken t where t.familyId = :familyId")
+    int deleteByFamilyId(@Param("familyId") String familyId);
+
+    @Modifying
+    @Query("delete from RefreshToken t where t.expiresAt <= :now")
+    int deleteExpired(@Param("now") LocalDateTime now);
+}

@@ -9,6 +9,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.net.URI;
 import java.net.http.HttpClient;
+import java.net.http.HttpHeaders;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
@@ -26,20 +27,24 @@ abstract class ApiTestSupport {
 
     protected static final String PASSWORD = "password123!";
     protected static final JsonMapper JSON = JsonMapper.builder().build();
-    private static final HttpClient HTTP = HttpClient.newHttpClient();
+    protected static final HttpClient HTTP = HttpClient.newHttpClient();
 
     @Value("${local.server.port}")
-    private int port;
+    protected int port;
 
     @Autowired
-    private JdbcTemplate jdbcTemplate;
+    protected JdbcTemplate jdbcTemplate;
 
     private final List<String> createdUsers = new ArrayList<>();
 
-    /** HTTP 상태 코드와 JSON 본문(본문이 없으면 빈 Map) */
-    protected record Res(int status, Map<String, Object> body) {
+    /** HTTP 상태 코드, JSON 본문(본문이 없으면 빈 Map), 응답 헤더 */
+    protected record Res(int status, Map<String, Object> body, HttpHeaders headers) {
         String str(String key) {
             return (String) body.get(key);
+        }
+
+        String header(String name) {
+            return headers.firstValue(name).orElse(null);
         }
     }
 
@@ -57,7 +62,7 @@ abstract class ApiTestSupport {
         }
         HttpResponse<String> response = HTTP.send(request.build(), HttpResponse.BodyHandlers.ofString());
         Map<String, Object> json = response.body().isBlank() ? Map.of() : JSON.readValue(response.body(), Map.class);
-        return new Res(response.statusCode(), json);
+        return new Res(response.statusCode(), json, response.headers());
     }
 
     /** 테스트마다 겹치지 않는 아이디 (끝나면 삭제 대상으로 기록) */
@@ -85,6 +90,9 @@ abstract class ApiTestSupport {
     @AfterEach
     void deleteCreatedUsers() {
         for (String username : createdUsers) {
+            for (String table : List.of("player_trainings", "player_currencies", "player_trainers", "player_monsters", "players")) {
+                jdbcTemplate.update("DELETE FROM " + table + " WHERE user_id IN (SELECT id FROM users WHERE username = ?)", username);
+            }
             jdbcTemplate.update("DELETE FROM refresh_tokens WHERE user_id IN (SELECT id FROM users WHERE username = ?)", username);
             jdbcTemplate.update("DELETE FROM users WHERE username = ?", username);
         }
