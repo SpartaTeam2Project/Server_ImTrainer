@@ -11,6 +11,10 @@ env:
   CONTAINER_NAME: imtrainer
   PARAM_PATH: /imtrainer/dev     # Parameter Store 경로. 이 아래 값들이 컨테이너 환경변수가 됨
 
+# 기본 권한은 코드 읽기만. AWS에 접근하는 job에서만 OIDC 토큰(id-token) 발급을 허용
+permissions:
+  contents: read
+
 jobs:
   # CI: 빌드가 되는지 확인
   build:
@@ -65,6 +69,9 @@ jobs:
   push-image:
     needs: build
     if: github.event_name == 'push'   # PR일 때는 건너뜀
+    permissions:
+      contents: read
+      id-token: write   # GitHub OIDC 토큰 발급 (AWS Role 수임에 필요)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -74,10 +81,11 @@ jobs:
           name: app
           path: build/libs
 
+      # GitHub OIDC로 IAM Role을 받아 임시 자격 증명 사용 (장기 Access Key 없음)
       - uses: aws-actions/configure-aws-credentials@v6
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: imtrainer-${{ github.run_id }}
           aws-region: ${{ env.AWS_REGION }}
 
       - id: ecr
@@ -101,12 +109,16 @@ jobs:
   deploy:
     needs: push-image
     if: github.event_name == 'push'   # PR일 때는 건너뜀
+    permissions:
+      contents: read
+      id-token: write   # GitHub OIDC 토큰 발급 (AWS Role 수임에 필요)
     runs-on: ubuntu-latest
     steps:
+      # GitHub OIDC로 IAM Role을 받아 임시 자격 증명 사용 (장기 Access Key 없음)
       - uses: aws-actions/configure-aws-credentials@v6
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: imtrainer-${{ github.run_id }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Write deploy script

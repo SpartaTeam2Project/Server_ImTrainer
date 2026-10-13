@@ -26,11 +26,11 @@ public class OpenApiConfig {
             - 로그인 응답의 `accessToken`, `refreshToken`을 모두 기기의 보안 저장소에 저장합니다.
             - refresh 성공 시 응답의 두 토큰을 **모두 새 값으로 교체**합니다. 이전 refreshToken은 재사용할 수 없습니다.
             - refresh 실패(`401`) 또는 로그아웃 시 저장된 토큰을 모두 삭제하고 로그인 화면으로 이동합니다.
-            - 앱을 다시 실행하면 저장된 토큰으로 바로 `GET /master-data`를 호출합니다. 토큰이 없으면 로그인 화면으로 이동합니다.
+            - 앱을 다시 실행하면 저장된 토큰으로 바로 `POST /master-data`를 호출합니다. 토큰이 없으면 로그인 화면으로 이동합니다.
 
             ## 게임 시작 흐름
 
-            1. `GET /master-data` 호출
+            1. `POST /master-data` 호출
             2. `200` → 게임 화면으로 이동
             3. `401` → refresh 후 재호출, refresh 실패 시 로그인 화면으로 이동
 

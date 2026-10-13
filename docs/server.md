@@ -159,16 +159,46 @@ git push (YJ_2) → 빌드(bootJar) → Docker 이미지 생성 → AWS ECR push
 
 | 이름 | 용도 |
 | --- | --- |
-| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | ECR push, SSM 명령 전송용 IAM 사용자 키 |
+| `AWS_ROLE_ARN` | GitHub Actions가 OIDC로 수임할 IAM Role ARN (`arn:aws:iam::<계정>:role/imtrainer-github-actions`) |
 | `ECR_REPOSITORY` | ECR 저장소 이름 |
 | `EC2_INSTANCE_ID` | 배포할 EC2 인스턴스 ID (`i-...`) |
 
 SSH 키는 사용하지 않습니다. 배포 명령은 AWS SSM(Run Command)으로 전송합니다.
 
-### IAM 사용자 권한 (GitHub Actions용)
+### AWS 인증 (GitHub OIDC)
 
-- `AmazonEC2ContainerRegistryPowerUser` (ECR push)
-- SSM 명령 전송: `ssm:SendCommand`, `ssm:GetCommandInvocation`
+GitHub Actions는 장기 Access Key 대신 GitHub OIDC로 IAM Role을 수임해 임시 자격 증명(1시간)을 받습니다. 키가 유출되거나 교체할 일이 없습니다.
+
+1. **OIDC 공급자 등록** (계정당 1회): IAM → 자격 증명 공급자 → 공급자 추가
+   - 유형: OpenID Connect
+   - 공급자 URL: `https://token.actions.githubusercontent.com`
+   - 대상(Audience): `sts.amazonaws.com`
+2. **IAM Role 생성** (`imtrainer-github-actions`), 신뢰 정책:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": { "Federated": "arn:aws:iam::<계정>:oidc-provider/token.actions.githubusercontent.com" },
+    "Action": "sts:AssumeRoleWithWebIdentity",
+    "Condition": {
+      "StringEquals": {
+        "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+        "token.actions.githubusercontent.com:sub": "repo:SpartaTeam2Project/Server_ImTrainer:ref:refs/heads/YJ_2"
+      }
+    }
+  }]
+}
+```
+
+   - `sub` 조건으로 이 저장소의 `YJ_2` 브랜치 push에서만 Role을 쓸 수 있습니다. dev 배포를 추가하면 `StringEquals`를 `StringLike`로 바꾸지 말고 `sub` 값을 배열로 두어 `...:ref:refs/heads/dev`를 추가합니다.
+   - PR 워크플로는 AWS를 쓰지 않으므로 신뢰 정책에 넣지 않습니다.
+3. **Role 권한 정책**:
+   - `AmazonEC2ContainerRegistryPowerUser` (ECR push) 또는 해당 저장소로 범위를 좁힌 정책
+   - SSM 명령 전송: `ssm:SendCommand`, `ssm:GetCommandInvocation`
+4. GitHub 저장소 Settings → Secrets에 `AWS_ROLE_ARN`을 등록합니다.
+5. 첫 배포가 성공하면 기존 IAM 사용자의 Access Key를 비활성화·삭제하고, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` Secret도 지웁니다.
 
 ### EC2 준비
 
