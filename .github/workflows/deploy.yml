@@ -1,0 +1,172 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [YJ_2]   # YJ_2 push: 테스트 + 이미지 업로드 + 배포
+  pull_request:
+    branches: [dev]    # dev로 PR: 테스트만 (이미지 업로드, 배포는 건너뜀)
+
+env:
+  AWS_REGION: ap-northeast-2
+  CONTAINER_NAME: imtrainer
+  PARAM_PATH: /imtrainer/dev     # Parameter Store 경로. 이 아래 값들이 컨테이너 환경변수가 됨
+
+jobs:
+  # CI: 빌드가 되는지 확인
+  build:
+    runs-on: ubuntu-latest
+    # 테스트용 MySQL. 이 job 안에서만 잠깐 떴다가 사라짐
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: test
+          MYSQL_DATABASE: game
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -ptest"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@v5
+
+      # 테스트가 실패하면 여기서 멈추고 이미지 업로드, 배포는 진행되지 않음
+      - name: Test and build jar
+        env:
+          SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/game?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: test
+          JWT_SECRET: Y2ktdGVzdC1vbmx5LWp3dC1zZWNyZXQtbm90LWZvci1wcm9kISE=   # 테스트 전용 값 (운영 값 아님)
+        run: |
+          chmod +x gradlew
+          ./gradlew test bootJar
+
+      - name: Upload test report
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: test-report
+          path: build/reports/tests/test
+          retention-days: 7
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: app
+          path: build/libs/app.jar
+          retention-days: 3
+
+  # Docker 이미지를 만들어 ECR에 push
+  push-image:
+    needs: build
+    if: github.event_name == 'push'   # PR일 때는 건너뜀
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: app
+          path: build/libs
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # Runner는 x86, EC2는 ARM(aarch64)이라 두 아키텍처용 이미지를 함께 만든다
+      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build and push image (amd64 + arm64)
+        run: |
+          IMAGE=${{ steps.ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            -t $IMAGE:${{ github.sha }} \
+            -t $IMAGE:${{ github.ref_name }} \
+            --push .
+
+  # CD: AWS SSM으로 EC2에 배포 명령 전송 (SSH 키, 22번 포트 불필요)
+  # 이미지 주소에는 계정 번호와 Secret이 들어가 job 사이로 넘길 수 없으므로 EC2에서 다시 만든다.
+  deploy:
+    needs: push-image
+    if: github.event_name == 'push'   # PR일 때는 건너뜀
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Write deploy script
+        run: |
+          # SSM 명령은 EC2에서 root로 실행되므로 sudo 불필요
+          cat > deploy.sh <<'EOF'
+          set -e
+          REGION=${{ env.AWS_REGION }}
+          ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+          REGISTRY=$ACCOUNT.dkr.ecr.$REGION.amazonaws.com
+          IMAGE=$REGISTRY/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
+          aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $REGISTRY
+          docker pull $IMAGE
+          # Parameter Store(PARAM_PATH 아래)에서 값을 읽어 임시 파일로 만들고, 끝나면 삭제 (값은 로그에 찍지 않음)
+          ENV_FILE=$(mktemp /run/imtrainer-env.XXXXXX)
+          trap 'rm -f "$ENV_FILE"' EXIT
+          aws ssm get-parameters-by-path --region $REGION --path ${{ env.PARAM_PATH }} --with-decryption \
+            --query 'Parameters[].[Name,Value]' --output text \
+            | awk -F'\t' '{ n = $1; sub(".*/", "", n); print n "=" $2 }' > "$ENV_FILE"
+          for key in SPRING_PROFILES_ACTIVE DB_USERNAME DB_PASSWORD JWT_SECRET; do
+            grep -q "^$key=" "$ENV_FILE" || { echo "missing parameter: ${{ env.PARAM_PATH }}/$key"; exit 1; }
+          done
+          docker rm -f ${{ env.CONTAINER_NAME }} 2>/dev/null || true
+          # 로그 파일 최대 10MB × 3개까지만 보관 (디스크 가득 참 방지)
+          docker run -d --name ${{ env.CONTAINER_NAME }} -p 8080:8080 --env-file "$ENV_FILE" --restart unless-stopped \
+            --log-opt max-size=10m --log-opt max-file=3 $IMAGE
+          # 헬스 체크: /actuator/health 가 200(UP)일 때만 성공, 최대 60초 대기
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/actuator/health || true)
+            if [ "$code" = "200" ]; then echo "server is up (health 200)"; docker image prune -af >/dev/null; exit 0; fi
+            sleep 2
+          done
+          echo "health check failed (last code: $code)"; docker logs --tail 50 ${{ env.CONTAINER_NAME }}; exit 1
+          EOF
+          jq -Rs '{commands: (split("\n") | map(select(length > 0))), executionTimeout: ["600"]}' deploy.sh > params.json
+
+      - name: Send command via SSM and wait
+        run: |
+          INSTANCE_ID=${{ secrets.EC2_INSTANCE_ID }}
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids $INSTANCE_ID \
+            --document-name AWS-RunShellScript \
+            --comment "deploy ${{ github.sha }}" \
+            --parameters file://params.json \
+            --query Command.CommandId --output text)
+          echo "command id: $COMMAND_ID"
+
+          # 최대 10분 대기
+          for i in $(seq 1 120); do
+            STATUS=$(aws ssm get-command-invocation --command-id $COMMAND_ID --instance-id $INSTANCE_ID \
+              --query Status --output text 2>/dev/null || echo Pending)
+            case $STATUS in
+              Pending|InProgress|Delayed) sleep 5 ;;
+              *) break ;;
+            esac
+          done
+
+          echo "----- stdout -----"
+          aws ssm get-command-invocation --command-id $COMMAND_ID --instance-id $INSTANCE_ID --query StandardOutputContent --output text
+          echo "----- stderr -----"
+          aws ssm get-command-invocation --command-id $COMMAND_ID --instance-id $INSTANCE_ID --query StandardErrorContent --output text
+          echo "status: $STATUS"
+          [ "$STATUS" = "Success" ]
