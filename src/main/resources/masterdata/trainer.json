@@ -1,0 +1,164 @@
+{
+    "trainers": [
+        {
+            "id": 1,
+            "key": "Playable_Gen1_Red",
+            "name": "레드",
+            "generation": 1,
+            "gender": 0,
+            "unlockedByIntro": true
+        },
+        {
+            "id": 2,
+            "key": "Playable_Gen1_Leaf",
+            "name": "리프",
+            "generation": 1,
+            "gender": 1,
+            "unlockedByIntro": true
+        },
+        {
+            "id": 3,
+            "key": "Playable_Gen1_Green",
+            "name": "그린",
+            "generation": 1,
+            "gender": 0,
+            "unlockedByIntro": false
+        },
+        {
+            "id": 4,
+            "key": "Playable_Gen1_Brock",
+            "name": "웅이",
+            "generation": 1,
+            "gender": 0,
+            "unlockedByIntro": false
+        },
+        {
+            "id": 5,
+            "key": "Playable_Gen1_Mysty",
+            "name": "이슬이",
+            "generation": 1,
+            "gender": 1,
+            "unlockedByIntro": false
+        },
+        {
+            "id": 6,
+            "key": "Playable_Gen1_Lance",
+            "name": "목호",
+            "generation": 1,
+            "gender": 0,
+            "unlockedByIntro": false
+        },
+        {
+            "id": 7,
+            "key": "Playable_Gen2_Echo",
+            "name": "심향",
+            "generation": 2,
+            "gender": 0,
+            "unlockedByIntro": false
+        },
+        {
+            "id": 8,
+            "key": "Playable_Gen2_Lira",
+            "name": "금선",
+            "generation": 2,
+            "gender": 1,
+            "unlockedByIntro": false
+        },
+        {
+            "id": 9,
+            "key": "Playable_Gen2_Plata",
+            "name": "실버",
+            "generation": 2,
+            "gender": 0,
+            "unlockedByIntro": false
+        },
+        {
+            "id": 10,
+            "key": "Playable_Gen2_Pegaso",
+            "name": "비상",
+            "generation": 2,
+            "gender": 0,
+            "unlockedByIntro": false
+        },
+        {
+            "id": 11,
+            "key": "Playable_Gen2_Blanca",
+            "name": "꼭두",
+            "generation": 2,
+            "gender": 1,
+            "unlockedByIntro": false
+        },
+        {
+            "id": 12,
+            "key": "Playable_Gen1_Giovanni",
+            "name": "비주기",
+            "generation": 1,
+            "gender": 0,
+            "unlockedByIntro": false
+        },
+        {
+            "id": 13,
+            "key": "Playable_Gen4_Leon",
+            "name": "광휘",
+            "generation": 4,
+            "gender": 0,
+            "unlockedByIntro": false
+        },
+        {
+            "id": 14,
+            "key": "Playable_Gen4_Maya",
+            "name": "빛나",
+            "generation": 4,
+            "gender": 0,
+            "unlockedByIntro": false
+        },
+        {
+            "id": 15,
+            "key": "Playable_Gen4_Paul",
+            "name": "용식",
+            "generation": 4,
+            "gender": 0,
+            "unlockedByIntro": false
+        },
+        {
+            "id": 16,
+            "key": "Playable_Gen4_Maylene",
+            "name": "자두",
+            "generation": 4,
+            "gender": 1,
+            "unlockedByIntro": false
+        },
+        {
+            "id": 17,
+            "key": "Playable_Gen4_CrasherWake",
+            "name": "맥시멈가면",
+            "generation": 4,
+            "gender": 0,
+            "unlockedByIntro": false
+        },
+        {
+            "id": 18,
+            "key": "Playable_Gen4_Cintia",
+            "name": "난천",
+            "generation": 4,
+            "gender": 1,
+            "unlockedByIntro": false
+        },
+        {
+            "id": 19,
+            "key": "Playable_Gen4_Helio",
+            "name": "태홍",
+            "generation": 4,
+            "gender": 0,
+            "unlockedByIntro": false
+        },
+        {
+            "id": 20,
+            "key": "Playable_Gen4_CintiaFormal",
+            "name": "의문의여인",
+            "generation": 4,
+            "gender": 1,
+            "unlockedByIntro": false
+        }
+    ]
+}
