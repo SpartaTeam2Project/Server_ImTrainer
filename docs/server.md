@@ -366,3 +366,29 @@ git push (YJ_2) → 테스트(MySQL) → bootJar → Docker 이미지(amd64·arm
 - 배포는 `YJ_2` 브랜치 push에서만 실행됩니다. `dev`로 PR을 열면 테스트만 실행합니다.
 - GitHub Secrets: `AWS_ROLE_ARN`, `ECR_REPOSITORY`, `EC2_INSTANCE_ID`
 - 서버 앞에 HTTPS용 프록시(CloudFront, ALB, Nginx 등)를 두면 Parameter Store에 `CLIENT_IP_HEADER=X-Forwarded-For`를 추가합니다. 없으면 로그인 시도 제한이 모든 사용자를 프록시 IP 하나로 보고 함께 차단합니다.
+
+## 라운드 / 리더보드
+
+진행 중인 라운드의 시작 시각은 **Redis**(`round:{username}`, TTL 2시간)에, 리더보드는 MySQL `leaderboard` 테이블(V5)에 저장합니다.
+
+| Method | Path | 설명 |
+| --- | --- | --- |
+| POST | `/rounds/start` | 본문 없음. 서버 시각을 시작 시간으로 기록. 진행 중인 라운드가 있으면 포기 처리 후 새로 시작 (201) |
+| POST | `/rounds/end` | 결과 검증 후 리더보드 기록 (200). 성공/실패와 관계없이 라운드 종료 |
+| GET | `/leaderboard?size=10` | 트레이너별 최고 기록 랭킹 (size 1~100) |
+
+| code | HTTP | 상황 |
+| --- | --- | --- |
+| `ROUND_NOT_FOUND` | 404 | 진행 중인 라운드가 없거나 만료(2시간) |
+| `INVALID_TIME` / `INVALID_BOSS` / `INVALID_KILL` / `INVALID_EXP` / `INVALID_LEVEL` / `INVALID_MONSTERBALL` / `INVALID_ENTRY` | 400 | 결과 검증 실패 (메시지는 모두 동일) |
+
+### 환경 변수
+
+| 이름 | 필수 | 설명 |
+| --- | --- | --- |
+| `REDIS_HOST` | 배포 시 O | 기본값 `localhost`. 컨테이너 안에서 localhost는 컨테이너 자신이므로 배포 환경에서는 반드시 지정 |
+| `REDIS_PORT` | X | 기본값 `6379` |
+
+로컬 실행: `docker run -d --name imtrainer-redis -p 6379:6379 redis:7`
+
+> Redis에 연결할 수 없으면 `/actuator/health`가 DOWN(503)이 되어 배포 헬스 체크가 실패합니다. 배포 전에 Redis를 준비해 주세요.

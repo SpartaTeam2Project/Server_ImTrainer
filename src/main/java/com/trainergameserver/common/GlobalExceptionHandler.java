@@ -14,6 +14,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.lang.reflect.RecordComponent;
 import java.util.Arrays;
@@ -75,6 +76,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleNotReadable(HttpMessageNotReadableException e) {
         return error(ErrorCode.INVALID_REQUEST, message("error.INVALID_REQUEST.json"));
+    }
+
+    /** 쿼리 파라미터 타입 오류 (예: /leaderboard?size=abc). 처리하지 않으면 500으로 내려갑니다. */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
+        return error(ErrorCode.INVALID_REQUEST, message("error.INVALID_REQUEST.type"));
     }
 
     /**

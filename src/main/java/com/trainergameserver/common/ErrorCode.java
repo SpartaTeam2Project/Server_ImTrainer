@@ -30,7 +30,17 @@ public enum ErrorCode {
     NOT_OWNED(HttpStatus.CONFLICT),
     INTRO_ALREADY_DONE(HttpStatus.CONFLICT),
     /** 마스터데이터에 없는 트레이닝·포켓몬 id */
-    UNKNOWN_ID(HttpStatus.CONFLICT);
+    UNKNOWN_ID(HttpStatus.CONFLICT),
+
+    // 라운드 (종료 결과 검증 실패는 400, 메시지는 모두 같은 문구)
+    ROUND_NOT_FOUND(HttpStatus.NOT_FOUND),
+    INVALID_TIME(HttpStatus.BAD_REQUEST),
+    INVALID_BOSS(HttpStatus.BAD_REQUEST),
+    INVALID_KILL(HttpStatus.BAD_REQUEST),
+    INVALID_EXP(HttpStatus.BAD_REQUEST),
+    INVALID_LEVEL(HttpStatus.BAD_REQUEST),
+    INVALID_MONSTERBALL(HttpStatus.BAD_REQUEST),
+    INVALID_ENTRY(HttpStatus.BAD_REQUEST);
 
     private final HttpStatus status;
 
