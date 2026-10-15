@@ -34,7 +34,7 @@ public record RoundEndRequest(
         Integer killCount,
 
         @NotNull(message = "{validation.round.pokemonEntry.required}")
-        @Size(min = 1, max = 3, message = "{validation.round.pokemonEntry.size}")
+        @Size(min = 1, max = 6, message = "{validation.round.pokemonEntry.size}")
         List<@NotNull(message = "{validation.round.pokemonEntry.required}")
              @Positive(message = "{validation.round.pokemonEntry.positive}") Integer> pokemonEntry,
 

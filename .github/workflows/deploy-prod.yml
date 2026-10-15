@@ -1,0 +1,186 @@
+name: Deploy (prod)
+
+# 운영 서버 배포. 팀원의 dev 배포(deploy.yml)와 완전히 분리된 별도 워크플로우입니다.
+#  - main 에 push(머지)되면 테스트 → 이미지 → 배포
+#  - Actions 탭에서 수동 실행도 가능 (main 브랜치 선택)
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# 배포가 겹치지 않도록 한 번에 하나만 실행 (뒤에 온 실행은 앞의 것이 끝날 때까지 대기)
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ap-southeast-2     # 무료 플랜 프로젝트 리전 (시드니)
+  # EC2 아키텍처에 맞출 것: EC2에서 `uname -m` → aarch64 면 linux/arm64, x86_64 면 linux/amd64
+  PLATFORM: linux/aarch64
+  CONTAINER_NAME: imtrainer
+  DOCKER_NETWORK: imtrainer-net   # EC2 사용자 데이터에서 만든 네트워크 (Redis 컨테이너와 공유)
+  PARAM_PATH: /imtrainer/prod     # 이 경로 아래 Parameter Store 값들이 컨테이너 환경변수가 됨
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: test
+          MYSQL_DATABASE: game
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -ptest"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@v5
+
+      - name: Test and build jar
+        env:
+          SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/game?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: test
+          JWT_SECRET: Y2ktdGVzdC1vbmx5LWp3dC1zZWNyZXQtbm90LWZvci1wcm9kISE=   # 테스트 전용 값
+        run: |
+          chmod +x gradlew
+          ./gradlew test bootJar
+
+      - name: Upload test report
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: test-report
+          path: build/reports/tests/test
+          retention-days: 7
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: app
+          path: build/libs/app.jar
+          retention-days: 3
+
+  push-image:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: app
+          path: build/libs
+
+      # 무료 플랜 계정은 SCP로 OIDC 공급자 생성이 막혀 있어, 배포 전용 IAM 사용자의 액세스 키를 사용
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-access-key-id: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-buildx-action@v4
+
+      # EC2 아키텍처용 이미지 하나만 만든다 (env.PLATFORM)
+      - name: Build and push image
+        run: |
+          IMAGE=${{ steps.ecr.outputs.registry }}/${{ secrets.PROD_ECR_REPOSITORY }}
+          docker buildx build \
+            --platform ${{ env.PLATFORM }} \
+            -t $IMAGE:${{ github.sha }} \
+            -t $IMAGE:prod \
+            --push .
+
+  deploy:
+    needs: push-image
+    runs-on: ubuntu-latest
+    steps:
+      # 무료 플랜 계정은 SCP로 OIDC 공급자 생성이 막혀 있어, 배포 전용 IAM 사용자의 액세스 키를 사용
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-access-key-id: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Write deploy script
+        run: |
+          cat > deploy.sh <<'EOF'
+          set -e
+          REGION=${{ env.AWS_REGION }}
+          ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+          REGISTRY=$ACCOUNT.dkr.ecr.$REGION.amazonaws.com
+          IMAGE=$REGISTRY/${{ secrets.PROD_ECR_REPOSITORY }}:${{ github.sha }}
+          aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $REGISTRY
+          docker pull $IMAGE
+
+          # Redis 네트워크/컨테이너가 없으면 만든다 (사용자 데이터가 실패했거나 수동으로 지운 경우 대비)
+          docker network inspect ${{ env.DOCKER_NETWORK }} >/dev/null 2>&1 || docker network create ${{ env.DOCKER_NETWORK }}
+          docker inspect redis >/dev/null 2>&1 || docker run -d --name redis --network ${{ env.DOCKER_NETWORK }} \
+            --restart unless-stopped --log-opt max-size=10m --log-opt max-file=3 \
+            redis:7 redis-server --save "" --appendonly no --maxmemory 64mb --maxmemory-policy volatile-ttl
+
+          # Parameter Store 값을 임시 env 파일로 (값은 로그에 찍지 않고, 끝나면 삭제)
+          ENV_FILE=$(mktemp /run/imtrainer-env.XXXXXX)
+          trap 'rm -f "$ENV_FILE"' EXIT
+          aws ssm get-parameters-by-path --region $REGION --path ${{ env.PARAM_PATH }} --with-decryption \
+            --query 'Parameters[].[Name,Value]' --output text \
+            | awk -F'\t' '{ n = $1; sub(".*/", "", n); print n "=" $2 }' > "$ENV_FILE"
+          for key in SPRING_PROFILES_ACTIVE DB_URL DB_USERNAME DB_PASSWORD JWT_SECRET REDIS_HOST; do
+            grep -q "^$key=" "$ENV_FILE" || { echo "missing parameter: ${{ env.PARAM_PATH }}/$key"; exit 1; }
+          done
+
+          docker rm -f ${{ env.CONTAINER_NAME }} 2>/dev/null || true
+          docker run -d --name ${{ env.CONTAINER_NAME }} --network ${{ env.DOCKER_NETWORK }} \
+            -p 8080:8080 --env-file "$ENV_FILE" --restart unless-stopped \
+            --log-opt max-size=10m --log-opt max-file=3 $IMAGE
+
+          # 헬스 체크 (DB + Redis 연결까지 포함). 첫 배포는 Flyway가 V1~V5를 실행하므로 최대 120초 대기
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/actuator/health || true)
+            if [ "$code" = "200" ]; then echo "server is up (health 200)"; docker image prune -af >/dev/null; exit 0; fi
+            sleep 2
+          done
+          echo "health check failed (last code: $code)"; docker logs --tail 80 ${{ env.CONTAINER_NAME }}; exit 1
+          EOF
+          jq -Rs '{commands: (split("\n") | map(select(length > 0))), executionTimeout: ["600"]}' deploy.sh > params.json
+
+      - name: Send command via SSM and wait
+        run: |
+          INSTANCE_ID=${{ secrets.PROD_EC2_INSTANCE_ID }}
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids $INSTANCE_ID \
+            --document-name AWS-RunShellScript \
+            --comment "deploy prod ${{ github.sha }}" \
+            --parameters file://params.json \
+            --query Command.CommandId --output text)
+          echo "command id: $COMMAND_ID"
+
+          for i in $(seq 1 120); do
+            STATUS=$(aws ssm get-command-invocation --command-id $COMMAND_ID --instance-id $INSTANCE_ID \
+              --query Status --output text 2>/dev/null || echo Pending)
+            case $STATUS in
+              Pending|InProgress|Delayed) sleep 5 ;;
+              *) break ;;
+            esac
+          done
+
+          echo "----- stdout -----"
+          aws ssm get-command-invocation --command-id $COMMAND_ID --instance-id $INSTANCE_ID --query StandardOutputContent --output text
+          echo "----- stderr -----"
+          aws ssm get-command-invocation --command-id $COMMAND_ID --instance-id $INSTANCE_ID --query StandardErrorContent --output text
+          echo "status: $STATUS"
+          [ "$STATUS" = "Success" ]
