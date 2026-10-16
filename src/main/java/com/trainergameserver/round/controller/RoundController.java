@@ -3,6 +3,7 @@ package com.trainergameserver.round.controller;
 import com.trainergameserver.auth.security.AuthUser;
 import com.trainergameserver.common.ErrorResponse;
 import com.trainergameserver.round.dto.RoundEndRequest;
+import com.trainergameserver.round.dto.RoundEndResponse;
 import com.trainergameserver.round.service.RoundService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -44,16 +45,16 @@ public class RoundController {
     }
 
     @Operation(summary = "라운드 종료",
-            description = "결과를 검증하고, 통과하면 리더보드에 기록합니다. 검증 성공 여부와 관계없이 진행 중인 라운드는 종료됩니다.")
-    @ApiResponse(responseCode = "200", description = "검증 성공, 본문 없음")
+            description = "결과를 검증하고, 통과하면 리더보드에 기록합니다. CLEAR면 남은 몬스터볼(current)만큼 pocket_dollar를 지급합니다. "
+                    + "검증 성공 여부와 관계없이 진행 중인 라운드는 종료됩니다.")
+    @ApiResponse(responseCode = "200", description = "검증 성공. 지급량과 갱신된 playerData")
     @ApiResponse(responseCode = "400", description = "입력값 오류(INVALID_REQUEST) 또는 검증 실패(INVALID_TIME, INVALID_BOSS ...)",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @ApiResponse(responseCode = "404", description = "진행 중인 라운드 없음(ROUND_NOT_FOUND)",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @PostMapping("/end")
-    public ResponseEntity<Void> endRound(@Parameter(hidden = true) @AuthUser String username,
-                                         @Valid @RequestBody RoundEndRequest request) {
-        roundService.endRound(username, request);
-        return ResponseEntity.ok().build();
+    public RoundEndResponse endRound(@Parameter(hidden = true) @AuthUser String username,
+                                     @Valid @RequestBody RoundEndRequest request) {
+        return roundService.endRound(username, request);
     }
 }

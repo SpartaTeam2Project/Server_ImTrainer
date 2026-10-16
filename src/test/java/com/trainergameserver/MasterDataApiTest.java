@@ -52,12 +52,12 @@ class MasterDataApiTest extends ApiTestSupport {
     }
 
     @Test
-    @DisplayName("마스터데이터 5개 테이블을 모두 받고, 각 hash는 data의 SHA-256이다")
+    @DisplayName("마스터데이터 6개 테이블을 모두 받고, 각 hash는 data의 SHA-256이다")
     void returnsAllTables() throws Exception {
         String token = newLoggedInUser().str("accessToken");
         Map<String, Object> tables = tables(post("/master-data", Map.of("hashes", Map.of()), token));
 
-        assertEquals(java.util.Set.of("monster", "player_base", "training", "storage_monster", "trainer"), tables.keySet());
+        assertEquals(java.util.Set.of("monster", "player_base", "training", "storage_monster", "trainer", "round_rule"), tables.keySet());
         for (Object value : tables.values()) {
             Map<?, ?> table = (Map<?, ?>) value;
             assertEquals(sha256((String) table.get("data")), table.get("hash"));

@@ -1,0 +1,17 @@
+{
+    "stageDurationSec": 1800,
+    "timeToleranceSec": 3,
+    "maxKillPerSec": 20,
+    "maxExpPerKill": 30,
+    "maxBallPerKill": 3,
+    "maxExpMultiplier": 2.0,
+    "maxBallMultiplier": 2.0,
+    "rivalSpawnSec": 600,
+    "rivalMinKillSec": 15,
+    "rivalExp": 500,
+    "rivalBall": 50,
+    "championSpawnSec": 1200,
+    "championMinKillSec": 25,
+    "championExp": 1500,
+    "championBall": 150
+}
