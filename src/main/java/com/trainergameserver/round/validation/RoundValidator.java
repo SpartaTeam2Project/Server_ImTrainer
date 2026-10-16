@@ -23,7 +23,26 @@ public class RoundValidator {
     /** 레벨 계산 상한 (곡선 값이 잘못돼도 무한 루프가 되지 않도록) */
     private static final int MAX_LEVEL = 500;
 
+    /** 해금 검증 + 결과 검증 (테스트 등에서 한 번에 확인할 때) */
     public void validate(RoundEndRequest req, RoundValidationContext ctx) {
+        validateUnlocks(req, ctx);
+        validateResult(req, ctx);
+    }
+
+    /**
+     * 해금 검증: 마스터데이터에 있는 id인지, 중복이 없는지.
+     * 오탐이 날 수 없는 확실한 검사라, 실패하면 해금도 하지 않습니다.
+     */
+    public void validateUnlocks(RoundEndRequest req, RoundValidationContext ctx) {
+        checkUnlock("트레이너", req.unlockedTrainerIds(), ctx.knownTrainerIds());
+        checkUnlock("포켓몬", req.unlockedMonsterIds(), ctx.knownMonsterIds());
+    }
+
+    /**
+     * 결과 검증: 시간, 보스, 처치 수, 경험치·레벨, 몬스터볼, 엔트리.
+     * 기준값(round_rule)에 따라 정상 플레이도 걸릴 수 있어, 실패해도 해금은 유지하고 리더보드·재화만 주지 않습니다.
+     */
+    public void validateResult(RoundEndRequest req, RoundValidationContext ctx) {
         RoundRuleData rule = ctx.rule();
         validateTime(req, rule, ctx.serverElapsedSec());
         validateBosses(req, rule);
@@ -127,14 +146,26 @@ public class RoundValidator {
             fail(ErrorCode.INVALID_MONSTERBALL, "earned %d > 최대 %.0f".formatted(m.earned(), maxEarned));
     }
 
+    // INVALID_UNLOCK (개수 제한은 @Size → INVALID_REQUEST)
+    private void checkUnlock(String kind, List<Integer> ids, java.util.Set<Integer> known) {
+        if (new HashSet<>(ids).size() != ids.size())
+            fail(ErrorCode.INVALID_UNLOCK, kind + " 해금 목록 중복 " + ids);
+        for (Integer id : ids) {
+            if (!known.contains(id))
+                fail(ErrorCode.INVALID_UNLOCK, "마스터데이터에 없는 " + kind + " " + id);
+        }
+    }
+
     // INVALID_ENTRY (개수 제한은 @Size → INVALID_REQUEST)
+    // 엔트리는 이미 보유한 포켓몬 + 이번 라운드에서 해금한 포켓몬 중에서만 허용
     private void validateEntry(RoundEndRequest req, RoundValidationContext ctx) {
         List<Integer> entry = req.pokemonEntry();
         if (new HashSet<>(entry).size() != entry.size())
             fail(ErrorCode.INVALID_ENTRY, "중복 " + entry);
         for (Integer id : entry) {
-            if (!ctx.ownedMonsterIds().contains(id))
-                fail(ErrorCode.INVALID_ENTRY, "보유하지 않은 포켓몬 " + id + " (보유: " + ctx.ownedMonsterIds() + ")");
+            if (!ctx.ownedMonsterIds().contains(id) && !req.unlockedMonsterIds().contains(id))
+                fail(ErrorCode.INVALID_ENTRY, "보유·해금하지 않은 포켓몬 " + id
+                        + " (보유: " + ctx.ownedMonsterIds() + ", 해금: " + req.unlockedMonsterIds() + ")");
         }
     }
 

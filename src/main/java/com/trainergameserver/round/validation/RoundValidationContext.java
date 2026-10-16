@@ -12,10 +12,14 @@ import java.util.Set;
  * @param rule             round_rule 마스터데이터
  * @param playerBase       player_base 마스터데이터 (레벨 곡선: baseRequiredXp, requiredGrowth)
  * @param ownedMonsterIds  플레이어가 보유한 포켓몬 id
+ * @param knownTrainerIds  마스터데이터 trainer 에 있는 트레이너 id
+ * @param knownMonsterIds  마스터데이터 storage_monster 에 있는 포켓몬 id
  */
 public record RoundValidationContext(
         double serverElapsedSec,
         RoundRuleData rule,
         PlayerBaseData playerBase,
-        Set<Integer> ownedMonsterIds) {
+        Set<Integer> ownedMonsterIds,
+        Set<Integer> knownTrainerIds,
+        Set<Integer> knownMonsterIds) {
 }

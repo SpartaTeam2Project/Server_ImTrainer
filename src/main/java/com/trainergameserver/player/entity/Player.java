@@ -6,10 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * 계정별 플레이데이터. users.id와 같은 id를 씁니다.
@@ -94,6 +91,16 @@ public class Player {
         grantedTrainerIds.forEach(ownedTrainerIds::add);
         this.ownedMonsterIds.add(starterMonsterId);
         this.selectedTrainerId = selectedTrainerId;
+        touch();
+    }
+
+    /** 해금한 트레이너·포켓몬을 보유 목록에 추가. 이미 보유한 id는 그대로 (Set) */
+    public void unlock(Collection<Integer> trainerIds, Collection<Integer> monsterIds) {
+        if (trainerIds.isEmpty() && monsterIds.isEmpty()) {
+            return;
+        }
+        ownedTrainerIds.addAll(trainerIds);
+        ownedMonsterIds.addAll(monsterIds);
         touch();
     }
 

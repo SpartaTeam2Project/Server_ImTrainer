@@ -37,6 +37,8 @@ class RoundValidatorTest {
             bd(30), bd(0.5), bd(1.5), bd(5), bd(1.25));
 
     private static final Set<Integer> OWNED = Set.of(25, 6, 9, 1);
+    private static final Set<Integer> KNOWN_TRAINERS = Set.of(1, 2, 3, 4, 5);
+    private static final Set<Integer> KNOWN_MONSTERS = Set.of(1, 4, 6, 7, 9, 10, 25, 133, 150);
     private static final double SERVER_ELAPSED = 1900;
 
     private final RoundValidator validator = new RoundValidator();
@@ -187,9 +189,58 @@ class RoundValidatorTest {
     @DisplayName("보유 포켓몬이 없으면(인트로 전) 어떤 엔트리도 INVALID_ENTRY")
     void noOwnedPokemon() {
         assertThatThrownBy(() -> validator.validate(request(r -> {}),
-                new RoundValidationContext(SERVER_ELAPSED, RULE, BASE, Set.of())))
+                new RoundValidationContext(SERVER_ELAPSED, RULE, BASE, Set.of(), KNOWN_TRAINERS, KNOWN_MONSTERS)))
                 .isInstanceOf(ApiException.class)
                 .satisfies(e -> assertThat(((ApiException) e).getCode()).isEqualTo(ErrorCode.INVALID_ENTRY));
+    }
+
+    // ===== 해금 =====
+
+    @Test
+    @DisplayName("이번 라운드에서 해금한 포켓몬은 엔트리에 쓸 수 있다")
+    void entryWithUnlockedPokemon() {
+        assertPass(request(r -> {
+            r.entry = List.of(25, 133);
+            r.unlockedMonsters = List.of(133);
+        }), SERVER_ELAPSED);
+    }
+
+    @Test
+    @DisplayName("DEAD 여도 해금 목록은 검증을 통과한다")
+    void unlockOnDead() {
+        assertPass(request(r -> {
+            r.result = RoundResult.DEAD;
+            r.gameTime = 300;
+            r.bossTime = new BossTime(null, null, null, null);
+            r.unlockedTrainers = List.of(3);
+            r.unlockedMonsters = List.of(133);
+        }), 320);
+    }
+
+    @Test
+    @DisplayName("마스터데이터에 없는 트레이너·포켓몬을 해금하면 INVALID_UNLOCK")
+    void unlockUnknownId() {
+        assertFail(request(r -> r.unlockedTrainers = List.of(999)), SERVER_ELAPSED, ErrorCode.INVALID_UNLOCK);
+        assertFail(request(r -> r.unlockedMonsters = List.of(9999)), SERVER_ELAPSED, ErrorCode.INVALID_UNLOCK);
+    }
+
+    @Test
+    @DisplayName("해금 목록에 중복이 있으면 INVALID_UNLOCK")
+    void unlockDuplicate() {
+        assertFail(request(r -> r.unlockedMonsters = List.of(133, 133)), SERVER_ELAPSED, ErrorCode.INVALID_UNLOCK);
+    }
+
+    @Test
+    @DisplayName("결과 검증에 실패해도 해금 검증은 따로 통과할 수 있다 (해금은 유지)")
+    void unlockValidIndependentOfResult() {
+        RoundEndRequest req = request(r -> {
+            r.killCount = 40000;                 // 결과 검증 실패 (INVALID_KILL)
+            r.unlockedMonsters = List.of(133);   // 해금 자체는 정상
+        });
+        RoundValidationContext ctx = new RoundValidationContext(SERVER_ELAPSED, RULE, BASE, OWNED, KNOWN_TRAINERS, KNOWN_MONSTERS);
+        assertThatCode(() -> validator.validateUnlocks(req, ctx)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> validator.validateResult(req, ctx))
+                .satisfies(e -> assertThat(((ApiException) e).getCode()).isEqualTo(ErrorCode.INVALID_KILL));
     }
 
     @Test
@@ -212,6 +263,8 @@ class RoundValidatorTest {
         int killCount = 1820;
         List<Integer> entry = List.of(25, 6, 9);
         BossTime bossTime = new BossTime(600.0, 640.2, 1200.0, 1265.8);
+        List<Integer> unlockedTrainers = List.of();
+        List<Integer> unlockedMonsters = List.of();
     }
 
     private static RoundEndRequest request(Consumer<Req> modifier) {
@@ -219,11 +272,11 @@ class RoundValidatorTest {
         modifier.accept(r);
         int level = (r.level != null) ? r.level : RoundValidator.levelOf(r.totalExp, BASE);
         return new RoundEndRequest(r.result, r.gameTime, level, r.totalExp,
-                r.ball, r.killCount, r.entry, r.bossTime);
+                r.ball, r.killCount, r.entry, r.bossTime, r.unlockedTrainers, r.unlockedMonsters);
     }
 
     private void validate(RoundEndRequest req, double serverElapsed) {
-        validator.validate(req, new RoundValidationContext(serverElapsed, RULE, BASE, OWNED));
+        validator.validate(req, new RoundValidationContext(serverElapsed, RULE, BASE, OWNED, KNOWN_TRAINERS, KNOWN_MONSTERS));
     }
 
     private void assertPass(RoundEndRequest req, double serverElapsed) {

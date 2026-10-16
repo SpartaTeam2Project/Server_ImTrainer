@@ -27,6 +27,7 @@ class RoundRewardTest {
 
     private static RoundEndRequest request(RoundResult result, long current) {
         return new RoundEndRequest(result, 1800.5, 1, 0L,
-                new MonsterBall(current, 0L, 0L, current), 0, List.of(1), new BossTime(null, null, null, null));
+                new MonsterBall(current, 0L, 0L, current), 0, List.of(1), new BossTime(null, null, null, null),
+                List.of(), List.of());
     }
 }
