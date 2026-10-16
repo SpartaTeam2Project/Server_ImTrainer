@@ -36,9 +36,20 @@ public record RoundEndRequest(
         @NotNull(message = "{validation.round.pokemonEntry.required}")
         @Size(min = 1, max = 6, message = "{validation.round.pokemonEntry.size}")
         List<@NotNull(message = "{validation.round.pokemonEntry.required}")
-             @Positive(message = "{validation.round.pokemonEntry.positive}") Integer> pokemonEntry,
+        @Positive(message = "{validation.round.pokemonEntry.positive}") Integer> pokemonEntry,
 
         @NotNull(message = "{validation.round.bossTime.required}")
         @Valid
-        BossTime bossTime
+        BossTime bossTime,
+
+        // 이번 라운드에서 해금한 트레이너·포켓몬. 없으면 빈 배열. CLEAR/DEAD 상관없이 검증 통과 시 보유 목록에 추가
+        @NotNull(message = "{validation.round.unlockedTrainerIds.required}")
+        @Size(max = 6, message = "{validation.round.unlockedTrainerIds.size}")
+        List<@NotNull(message = "{validation.round.unlockedTrainerIds.required}")
+        @Positive(message = "{validation.round.unlocked.positive}") Integer> unlockedTrainerIds,
+
+        @NotNull(message = "{validation.round.unlockedMonsterIds.required}")
+        @Size(max = 6, message = "{validation.round.unlockedMonsterIds.size}")
+        List<@NotNull(message = "{validation.round.unlockedMonsterIds.required}")
+        @Positive(message = "{validation.round.unlocked.positive}") Integer> unlockedMonsterIds
 ) {}
