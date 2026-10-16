@@ -3,11 +3,11 @@ package com.trainergameserver.round.validation;
 import com.trainergameserver.common.ApiException;
 import com.trainergameserver.common.ErrorCode;
 import com.trainergameserver.master.dto.PlayerBaseData;
-import com.trainergameserver.master.dto.RoundRuleData;
 import com.trainergameserver.round.dto.BossTime;
 import com.trainergameserver.round.dto.MonsterBall;
 import com.trainergameserver.round.dto.RoundEndRequest;
 import com.trainergameserver.round.dto.RoundResult;
+import com.trainergameserver.round.rule.RoundRuleProperties;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -22,14 +22,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * RoundValidator 단위 테스트. Spring/Redis/MySQL 없이 검증 로직만 확인합니다.
- * 기준값은 resources/masterdata/round_rule.json, player_base.json 과 같은 값으로 둡니다.
+ * 기준값은 application.properties 의 round.rule.*, masterdata/player_base.json 과 같은 값으로 둡니다.
  */
 class RoundValidatorTest {
 
-    private static final RoundRuleData RULE = new RoundRuleData(
-            bd(1800), bd(3), bd(20), bd(30), bd(3), bd(2.0), bd(2.0),
-            bd(600), bd(15), bd(500), bd(50),
-            bd(1200), bd(25), bd(1500), bd(150));
+    private static final RoundRuleProperties RULE = new RoundRuleProperties(
+            1800, 3, 20, 30, 3, 2.0, 2.0,
+            600, 15, 500, 50,
+            1200, 25, 1500, 150);
 
     /** 레벨 곡선만 의미 있음: baseRequiredXp 5, requiredGrowth 1.25 */
     private static final PlayerBaseData BASE = new PlayerBaseData(

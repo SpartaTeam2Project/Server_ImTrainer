@@ -7,7 +7,6 @@ import com.trainergameserver.common.ErrorCode;
 import com.trainergameserver.common.UnauthorizedException;
 import com.trainergameserver.leaderboard.service.LeaderboardService;
 import com.trainergameserver.master.service.PlayerBaseTable;
-import com.trainergameserver.master.service.RoundRuleTable;
 import com.trainergameserver.master.service.StorageMonsterTable;
 import com.trainergameserver.master.service.TrainerTable;
 import com.trainergameserver.player.entity.Player;
@@ -19,6 +18,7 @@ import com.trainergameserver.round.dto.RoundEndResponse;
 import com.trainergameserver.round.dto.RoundResult;
 import com.trainergameserver.round.entity.RoundViolation;
 import com.trainergameserver.round.repository.RoundViolationRepository;
+import com.trainergameserver.round.rule.RoundRuleProperties;
 import com.trainergameserver.round.validation.RoundValidationContext;
 import com.trainergameserver.round.validation.RoundValidationException;
 import com.trainergameserver.round.validation.RoundValidator;
@@ -57,13 +57,13 @@ public class RoundService {
     private final CurrencyService currencyService;
     private final UserRepository userRepository;
     private final PlayerRepository playerRepository;
-    private final RoundRuleTable roundRuleTable;
+    private final RoundRuleProperties roundRule;
     private final PlayerBaseTable playerBaseTable;
 
     public RoundService(PlayerService playerService, StringRedisTemplate redisTemplate, RoundValidator roundValidator,
                         LeaderboardService leaderboardService, CurrencyService currencyService,
                         UserRepository userRepository, PlayerRepository playerRepository,
-                        RoundRuleTable roundRuleTable, PlayerBaseTable playerBaseTable,
+                        RoundRuleProperties roundRule, PlayerBaseTable playerBaseTable,
                         TrainerTable trainerTable, StorageMonsterTable storageMonsterTable,
                         RoundViolationRepository roundViolationRepository) {
         this.roundViolationRepository = roundViolationRepository;
@@ -76,7 +76,7 @@ public class RoundService {
         this.currencyService = currencyService;
         this.userRepository = userRepository;
         this.playerRepository = playerRepository;
-        this.roundRuleTable = roundRuleTable;
+        this.roundRule = roundRule;
         this.playerBaseTable = playerBaseTable;
     }
 
@@ -113,7 +113,7 @@ public class RoundService {
         Player player = playerRepository.findForUpdate(user.getId()).orElseThrow();
 
         RoundValidationContext ctx = new RoundValidationContext(serverElapsedSec,
-                roundRuleTable.current(), playerBaseTable.current(), Set.copyOf(player.getOwnedMonsterIds()),
+                roundRule, playerBaseTable.current(), Set.copyOf(player.getOwnedMonsterIds()),
                 knownTrainerIds(), knownMonsterIds());
         // 1) 해금 검증: 확실한 검사라 실패하면 해금도 하지 않는다
         try {

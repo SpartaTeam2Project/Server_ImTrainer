@@ -2,11 +2,11 @@ package com.trainergameserver.round.validation;
 
 import com.trainergameserver.common.ErrorCode;
 import com.trainergameserver.master.dto.PlayerBaseData;
-import com.trainergameserver.master.dto.RoundRuleData;
 import com.trainergameserver.round.dto.BossTime;
 import com.trainergameserver.round.dto.MonsterBall;
 import com.trainergameserver.round.dto.RoundEndRequest;
 import com.trainergameserver.round.dto.RoundResult;
+import com.trainergameserver.round.rule.RoundRuleProperties;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -14,7 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 
 /**
- * 라운드 결과 검증. 기준값은 마스터데이터(round_rule, player_base)에서 읽습니다.
+ * 라운드 결과 검증. 기준값은 서버 설정(round.rule.*)과 마스터데이터 player_base(레벨 곡선)에서 읽습니다.
  * 실패하면 400 + 항목별 ErrorCode. 응답 문구는 모두 같고, 자세한 이유(reason)는 서버 로그에만 남습니다.
  */
 @Component
@@ -40,10 +40,10 @@ public class RoundValidator {
 
     /**
      * 결과 검증: 시간, 보스, 처치 수, 경험치·레벨, 몬스터볼, 엔트리.
-     * 기준값(round_rule)에 따라 정상 플레이도 걸릴 수 있어, 실패해도 해금은 유지하고 리더보드·재화만 주지 않습니다.
+     * 기준값(round.rule.*)에 따라 정상 플레이도 걸릴 수 있어, 실패해도 해금은 유지하고 리더보드·재화만 주지 않습니다.
      */
     public void validateResult(RoundEndRequest req, RoundValidationContext ctx) {
-        RoundRuleData rule = ctx.rule();
+        RoundRuleProperties rule = ctx.rule();
         validateTime(req, rule, ctx.serverElapsedSec());
         validateBosses(req, rule);
         validateKill(req, rule);
@@ -70,15 +70,15 @@ public class RoundValidator {
     }
 
     // INVALID_TIME
-    private void validateTime(RoundEndRequest req, RoundRuleData rule, double serverElapsedSec) {
-        double tolerance = d(rule.timeToleranceSec());
+    private void validateTime(RoundEndRequest req, RoundRuleProperties rule, double serverElapsedSec) {
+        double tolerance = rule.timeToleranceSec();
         // 일시정지가 있으므로 게임 시간은 실제 경과 시간보다 길 수 없다
         if (req.gameTime() > serverElapsedSec + tolerance) {
             fail(ErrorCode.INVALID_TIME, "gameTime %.1f > 서버 경과 %.1f".formatted(req.gameTime(), serverElapsedSec));
         }
         // 클리어 조건: 제한 시간 생존 + 챔피언 처치
         if (req.result() == RoundResult.CLEAR) {
-            double duration = d(rule.stageDurationSec());
+            double duration = rule.stageDurationSec();
             if (req.gameTime() < duration)
                 fail(ErrorCode.INVALID_TIME, "CLEAR 인데 gameTime %.1f < %.0f".formatted(req.gameTime(), duration));
             if (req.bossTime().championKill() == null)
@@ -87,11 +87,11 @@ public class RoundValidator {
     }
 
     // INVALID_BOSS
-    private void validateBosses(RoundEndRequest req, RoundRuleData rule) {
+    private void validateBosses(RoundEndRequest req, RoundRuleProperties rule) {
         BossTime b = req.bossTime();
-        double tolerance = d(rule.timeToleranceSec());
-        checkBoss("라이벌", b.rivalSpawn(), b.rivalKill(), d(rule.rivalSpawnSec()), d(rule.rivalMinKillSec()), tolerance, req.gameTime());
-        checkBoss("챔피언", b.championSpawn(), b.championKill(), d(rule.championSpawnSec()), d(rule.championMinKillSec()), tolerance, req.gameTime());
+        double tolerance = rule.timeToleranceSec();
+        checkBoss("라이벌", b.rivalSpawn(), b.rivalKill(), rule.rivalSpawnSec(), rule.rivalMinKillSec(), tolerance, req.gameTime());
+        checkBoss("챔피언", b.championSpawn(), b.championKill(), rule.championSpawnSec(), rule.championMinKillSec(), tolerance, req.gameTime());
     }
 
     private void checkBoss(String name, Double spawn, Double kill, double spawnSec, double minKillSec,
@@ -116,16 +116,16 @@ public class RoundValidator {
     }
 
     // INVALID_KILL
-    private void validateKill(RoundEndRequest req, RoundRuleData rule) {
-        double maxKills = req.gameTime() * d(rule.maxKillPerSec());
+    private void validateKill(RoundEndRequest req, RoundRuleProperties rule) {
+        double maxKills = req.gameTime() * rule.maxKillPerSec();
         if (req.killCount() > maxKills)
             fail(ErrorCode.INVALID_KILL, "killCount %d > 최대 %.0f".formatted(req.killCount(), maxKills));
     }
 
     // INVALID_EXP, INVALID_LEVEL
-    private void validateExpAndLevel(RoundEndRequest req, RoundRuleData rule, PlayerBaseData base) {
-        double maxExp = req.killCount() * d(rule.maxExpPerKill()) * d(rule.maxExpMultiplier())
-                + bossReward(req.bossTime(), d(rule.rivalExp()), d(rule.championExp())) * d(rule.maxExpMultiplier());
+    private void validateExpAndLevel(RoundEndRequest req, RoundRuleProperties rule, PlayerBaseData base) {
+        double maxExp = req.killCount() * rule.maxExpPerKill() * rule.maxExpMultiplier()
+                + bossReward(req.bossTime(), rule.rivalExp(), rule.championExp()) * rule.maxExpMultiplier();
         if (req.totalExp() > maxExp)
             fail(ErrorCode.INVALID_EXP, "totalExp %d > 최대 %.0f".formatted(req.totalExp(), maxExp));
 
@@ -135,13 +135,13 @@ public class RoundValidator {
     }
 
     // INVALID_MONSTERBALL
-    private void validateMonsterBall(RoundEndRequest req, RoundRuleData rule) {
+    private void validateMonsterBall(RoundEndRequest req, RoundRuleProperties rule) {
         MonsterBall m = req.monsterBall();
         if (m.earned() - m.spent() + m.sold() != m.current())
             fail(ErrorCode.INVALID_MONSTERBALL, "산식 불일치 %d - %d + %d != %d".formatted(m.earned(), m.spent(), m.sold(), m.current()));
 
-        double maxEarned = req.killCount() * d(rule.maxBallPerKill()) * d(rule.maxBallMultiplier())
-                + bossReward(req.bossTime(), d(rule.rivalBall()), d(rule.championBall())) * d(rule.maxBallMultiplier());
+        double maxEarned = req.killCount() * rule.maxBallPerKill() * rule.maxBallMultiplier()
+                + bossReward(req.bossTime(), rule.rivalBall(), rule.championBall()) * rule.maxBallMultiplier();
         if (m.earned() > maxEarned)
             fail(ErrorCode.INVALID_MONSTERBALL, "earned %d > 최대 %.0f".formatted(m.earned(), maxEarned));
     }
