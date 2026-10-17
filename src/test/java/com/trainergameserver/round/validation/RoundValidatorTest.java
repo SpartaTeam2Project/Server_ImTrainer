@@ -27,9 +27,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class RoundValidatorTest {
 
     private static final RoundRuleProperties RULE = new RoundRuleProperties(
-            1800, 3, 20, 30, 3, 2.0, 2.0,
-            600, 15, 500, 50,
-            1200, 25, 1500, 150);
+            3, 20, 30, 3, 10, 2.0, 2.0, 2.0,
+            600, 500, 50, 100,
+            1200, 1500, 150, 300);
 
     /** 레벨 곡선만 의미 있음: baseRequiredXp 5, requiredGrowth 1.25 */
     private static final PlayerBaseData BASE = new PlayerBaseData(
@@ -92,15 +92,15 @@ class RoundValidatorTest {
     }
 
     @Test
-    @DisplayName("제한 시간을 채우지 못했는데 CLEAR 면 INVALID_TIME")
-    void clearBeforeStageEnd() {
-        assertFail(request(r -> r.gameTime = 1700), SERVER_ELAPSED, ErrorCode.INVALID_TIME);
+    @DisplayName("CLEAR 인데 게임 시간이 챔피언 처치 시간과 다르면(처치 후 바로 보내지 않음) INVALID_TIME")
+    void clearNotRightAfterChampion() {
+        assertFail(request(r -> r.gameTime = 1250), SERVER_ELAPSED, ErrorCode.INVALID_TIME);
     }
 
     @Test
     @DisplayName("챔피언을 처치하지 않았는데 CLEAR 면 INVALID_TIME")
     void clearWithoutChampion() {
-        assertFail(request(r -> r.bossTime = new BossTime(600.0, 640.2, 1200.0, null)),
+        assertFail(request(r -> r.bossTime = new BossTime(600.0, 600.0, 1200.0, null)),
                 SERVER_ELAPSED, ErrorCode.INVALID_TIME);
     }
 
@@ -109,21 +109,35 @@ class RoundValidatorTest {
     @Test
     @DisplayName("라이벌 출현 시간이 스케줄과 다르면 INVALID_BOSS")
     void rivalSpawnMismatch() {
-        assertFail(request(r -> r.bossTime = new BossTime(500.0, 540.0, 1200.0, 1265.8)),
+        assertFail(request(r -> r.bossTime = new BossTime(500.0, 500.0, 1200.0, 1200.0)),
                 SERVER_ELAPSED, ErrorCode.INVALID_BOSS);
     }
 
     @Test
-    @DisplayName("라이벌을 최소 처치 시간보다 빨리 잡으면 INVALID_BOSS")
-    void rivalKilledTooFast() {
-        assertFail(request(r -> r.bossTime = new BossTime(600.0, 605.0, 1200.0, 1265.8)),
+    @DisplayName("보스 처치 시간이 출현 시간보다 앞서면 INVALID_BOSS")
+    void killBeforeSpawn() {
+        assertFail(request(r -> r.bossTime = new BossTime(600.0, 599.0, 1200.0, 1200.0)),
                 SERVER_ELAPSED, ErrorCode.INVALID_BOSS);
+    }
+
+    @Test
+    @DisplayName("보스전 동안 시계가 멈춰 처치 시간 = 출현 시간이어도 통과")
+    void bossKillSameAsSpawn() {
+        assertPass(request(r -> {}), SERVER_ELAPSED);   // 기본값이 600/600, 1200/1200
+    }
+
+    // ===== INVALID_POCKET_DOLLAR =====
+
+    @Test
+    @DisplayName("주운 포켓달러가 처치 수·보스 기준 최대치를 넘으면 INVALID_POCKET_DOLLAR")
+    void tooMuchPocketDollar() {
+        assertFail(request(r -> r.pocketDollar = 10_000_000), SERVER_ELAPSED, ErrorCode.INVALID_POCKET_DOLLAR);
     }
 
     @Test
     @DisplayName("출현 기록 없이 처치 기록만 있으면 INVALID_BOSS")
     void killWithoutSpawn() {
-        assertFail(request(r -> r.bossTime = new BossTime(null, 640.0, 1200.0, 1265.8)),
+        assertFail(request(r -> r.bossTime = new BossTime(null, 600.0, 1200.0, 1200.0)),
                 SERVER_ELAPSED, ErrorCode.INVALID_BOSS);
     }
 
@@ -256,13 +270,14 @@ class RoundValidatorTest {
     /** 기본값 = 정상 클리어 기록 */
     private static class Req {
         RoundResult result = RoundResult.CLEAR;
-        double gameTime = 1800.5;
+        double gameTime = 1200.0;   // 챔피언 처치 즉시 종료, 보스전 동안 시계 정지
         long totalExp = 52000;
         Integer level = null; // null 이면 totalExp 로 자동 계산
         MonsterBall ball = new MonsterBall(1200L, 800L, 100L, 500L);
         int killCount = 1820;
         List<Integer> entry = List.of(25, 6, 9);
-        BossTime bossTime = new BossTime(600.0, 640.2, 1200.0, 1265.8);
+        BossTime bossTime = new BossTime(600.0, 600.0, 1200.0, 1200.0);
+        long pocketDollar = 1000;
         List<Integer> unlockedTrainers = List.of();
         List<Integer> unlockedMonsters = List.of();
     }
@@ -272,7 +287,7 @@ class RoundValidatorTest {
         modifier.accept(r);
         int level = (r.level != null) ? r.level : RoundValidator.levelOf(r.totalExp, BASE);
         return new RoundEndRequest(r.result, r.gameTime, level, r.totalExp,
-                r.ball, r.killCount, r.entry, r.bossTime, r.unlockedTrainers, r.unlockedMonsters);
+                r.ball, r.killCount, r.entry, r.bossTime, r.pocketDollar, r.unlockedTrainers, r.unlockedMonsters);
     }
 
     private void validate(RoundEndRequest req, double serverElapsed) {

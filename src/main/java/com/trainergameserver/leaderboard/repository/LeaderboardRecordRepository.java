@@ -5,8 +5,11 @@ import com.trainergameserver.leaderboard.entity.LeaderboardRecord;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface LeaderboardRecordRepository extends JpaRepository<LeaderboardRecord, String> {
 
@@ -22,4 +25,22 @@ public interface LeaderboardRecordRepository extends JpaRepository<LeaderboardRe
             order by l.killCount desc, l.recordedAt asc
             """)
     List<LeaderboardRow> findRanking(Pageable pageable);
+
+    /** 한 트레이너의 기록 + 닉네임 (내 순위 표시용) */
+    @Query("""
+            select new com.trainergameserver.leaderboard.dto.LeaderboardRow(l, p.nickname, p.introDone)
+            from LeaderboardRecord l
+            join User u on u.username = l.trainerId
+            left join Player p on p.userId = u.id
+            where l.trainerId = :trainerId
+            """)
+    Optional<LeaderboardRow> findRow(@Param("trainerId") String trainerId);
+
+    /** 이 기록보다 앞선 기록 수 (처치 수가 많거나, 같으면 먼저 달성). 순위 = 이 값 + 1 */
+    @Query("""
+            select count(l) from LeaderboardRecord l
+            where l.killCount > :killCount
+               or (l.killCount = :killCount and l.recordedAt < :recordedAt)
+            """)
+    long countAhead(@Param("killCount") int killCount, @Param("recordedAt") LocalDateTime recordedAt);
 }
