@@ -13,19 +13,20 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties(prefix = "round.rule")
 public record RoundRuleProperties(
-        @Positive double stageDurationSec,    // 클리어에 필요한 생존 시간(초)
         @Positive double timeToleranceSec,    // 시간 비교 오차(초)
         @Positive double maxKillPerSec,       // 초당 최대 처치 수
         @Positive double maxExpPerKill,       // 야생 포켓몬 1마리 최대 경험치
         @Positive double maxBallPerKill,      // 야생 포켓몬 1마리 최대 몬스터볼
+        @Positive double maxDollarPerKill,    // 야생 포켓몬 1마리 최대 포켓달러 (ShardBonus 적용 전)
         @Positive double maxExpMultiplier,    // 업그레이드로 가능한 최대 경험치 배율
         @Positive double maxBallMultiplier,   // 업그레이드로 가능한 최대 몬스터볼 배율
-        @Positive double rivalSpawnSec,       // 라이벌 출현 시간 (클라와 같은 값이어야 함)
-        @Positive double rivalMinKillSec,     // 라이벌 체력 / 이론상 최대 DPS
+        @Positive double maxDollarMultiplier, // 업그레이드(DollarDrop 등)로 가능한 최대 포켓달러 배율
+        @Positive double rivalSpawnSec,       // 라이벌전 시작 시간 (클라와 같은 값이어야 함). 라이벌전은 2마리
         @Positive double rivalExp,
         @Positive double rivalBall,
-        @Positive double championSpawnSec,    // 챔피언 출현 시간 (클라와 같은 값이어야 함)
-        @Positive double championMinKillSec,
+        @Positive double rivalDollar,
+        @Positive double championSpawnSec,    // 챔피언전 시작 시간 (클라와 같은 값이어야 함). 챔피언전은 3마리, 처치 = 클리어
         @Positive double championExp,
-        @Positive double championBall) {
+        @Positive double championBall,
+        @Positive double championDollar) {
 }

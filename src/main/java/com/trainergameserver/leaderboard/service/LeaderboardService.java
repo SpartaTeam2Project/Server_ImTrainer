@@ -3,6 +3,7 @@ package com.trainergameserver.leaderboard.service;
 import com.trainergameserver.leaderboard.dto.LeaderboardEntry;
 import com.trainergameserver.leaderboard.dto.LeaderboardResponse;
 import com.trainergameserver.leaderboard.dto.LeaderboardRow;
+import com.trainergameserver.leaderboard.dto.MyRankResponse;
 import com.trainergameserver.leaderboard.entity.LeaderboardRecord;
 import com.trainergameserver.leaderboard.repository.LeaderboardRecordRepository;
 import com.trainergameserver.round.dto.RoundEndRequest;
@@ -47,12 +48,25 @@ public class LeaderboardService {
         return new LeaderboardResponse(entries);
     }
 
+    /** 내 순위. 상위 목록 밖이어도 몇 등인지 계산하고, 기록이 없으면 ranked=false */
+    @Transactional(readOnly = true)
+    public MyRankResponse getMyRank(String username) {
+        LeaderboardEntry entry = leaderboardRecordRepository.findRow(username)
+                .map(row -> {
+                    LeaderboardRecord r = row.record();
+                    int rank = (int) leaderboardRecordRepository.countAhead(r.getKillCount(), r.getRecordedAt()) + 1;
+                    return toEntry(rank, row);
+                })
+                .orElse(null);
+        return MyRankResponse.of(entry);
+    }
+
     /**
      * 리더보드에는 검증을 통과한 기록만 올라오고, 검증은 보유 포켓몬이 있어야(= 인트로 완료) 통과하므로
      * 닉네임은 항상 인트로에서 정한 이름입니다. 엔트리 검증 규칙을 바꿀 때 이 전제가 유지되는지 확인하세요.
      */
     private LeaderboardEntry toEntry(int rank, LeaderboardRow row) {
         LeaderboardRecord r = row.record();
-        return new LeaderboardEntry(rank, row.nickname(), r.getKillCount(), r.getGameTime(), r.getResult(), r.getRecordedAt());
+        return new LeaderboardEntry(rank, row.nickname(), r.getKillCount(), r.pokemonEntryIds());
     }
 }

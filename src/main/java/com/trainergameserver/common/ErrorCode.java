@@ -41,7 +41,8 @@ public enum ErrorCode {
     INVALID_LEVEL(HttpStatus.BAD_REQUEST),
     INVALID_MONSTERBALL(HttpStatus.BAD_REQUEST),
     INVALID_ENTRY(HttpStatus.BAD_REQUEST),
-    INVALID_UNLOCK(HttpStatus.BAD_REQUEST);
+    INVALID_UNLOCK(HttpStatus.BAD_REQUEST),
+    INVALID_POCKET_DOLLAR(HttpStatus.BAD_REQUEST);
 
 
     private final HttpStatus status;
