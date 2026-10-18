@@ -42,14 +42,17 @@ public record RoundEndRequest(
         @Valid
         BossTime bossTime,
 
-        // 이번 라운드에서 해금한 트레이너·포켓몬. 없으면 빈 배열. CLEAR/DEAD 상관없이 검증 통과 시 보유 목록에 추가
+        // 이번 판에서 주운 포켓달러 (ShardBonus 적용 전). 서버가 (1 + ShardBonus)를 곱해 지급. CLEAR/DEAD 모두
+        @NotNull(message = "{validation.round.pocketDollar.required}")
+        @PositiveOrZero(message = "{validation.round.pocketDollar.negative}")
+        Long pocketDollar,
+
+        // 계정에 해금된 트레이너·포켓몬 전체 목록 (개수 제한 없음). 서버는 보유 목록에 추가만 한다
         @NotNull(message = "{validation.round.unlockedTrainerIds.required}")
-        @Size(max = 6, message = "{validation.round.unlockedTrainerIds.size}")
         List<@NotNull(message = "{validation.round.unlockedTrainerIds.required}")
         @Positive(message = "{validation.round.unlocked.positive}") Integer> unlockedTrainerIds,
 
         @NotNull(message = "{validation.round.unlockedMonsterIds.required}")
-        @Size(max = 6, message = "{validation.round.unlockedMonsterIds.size}")
         List<@NotNull(message = "{validation.round.unlockedMonsterIds.required}")
         @Positive(message = "{validation.round.unlocked.positive}") Integer> unlockedMonsterIds
 ) {}

@@ -49,6 +49,7 @@ public class RoundValidator {
         validateKill(req, rule);
         validateExpAndLevel(req, rule, ctx.playerBase());
         validateMonsterBall(req, rule);
+        validatePocketDollar(req, rule);
         validateEntry(req, ctx);
     }
 
@@ -76,13 +77,13 @@ public class RoundValidator {
         if (req.gameTime() > serverElapsedSec + tolerance) {
             fail(ErrorCode.INVALID_TIME, "gameTime %.1f > 서버 경과 %.1f".formatted(req.gameTime(), serverElapsedSec));
         }
-        // 클리어 조건: 제한 시간 생존 + 챔피언 처치
+        // 클리어 조건: 챔피언전(3마리) 처치. 처치 즉시 클라가 end 를 보내므로 게임 시간 ≈ 챔피언 처치 시간
         if (req.result() == RoundResult.CLEAR) {
-            double duration = rule.stageDurationSec();
-            if (req.gameTime() < duration)
-                fail(ErrorCode.INVALID_TIME, "CLEAR 인데 gameTime %.1f < %.0f".formatted(req.gameTime(), duration));
-            if (req.bossTime().championKill() == null)
+            Double championKill = req.bossTime().championKill();
+            if (championKill == null)
                 fail(ErrorCode.INVALID_TIME, "CLEAR 인데 챔피언 미처치");
+            if (Math.abs(req.gameTime() - championKill) > tolerance)
+                fail(ErrorCode.INVALID_TIME, "CLEAR 인데 gameTime %.1f 가 챔피언 처치 %.1f 와 다름".formatted(req.gameTime(), championKill));
         }
     }
 
@@ -90,11 +91,15 @@ public class RoundValidator {
     private void validateBosses(RoundEndRequest req, RoundRuleProperties rule) {
         BossTime b = req.bossTime();
         double tolerance = rule.timeToleranceSec();
-        checkBoss("라이벌", b.rivalSpawn(), b.rivalKill(), rule.rivalSpawnSec(), rule.rivalMinKillSec(), tolerance, req.gameTime());
-        checkBoss("챔피언", b.championSpawn(), b.championKill(), rule.championSpawnSec(), rule.championMinKillSec(), tolerance, req.gameTime());
+        checkBoss("라이벌", b.rivalSpawn(), b.rivalKill(), rule.rivalSpawnSec(), tolerance, req.gameTime());
+        checkBoss("챔피언", b.championSpawn(), b.championKill(), rule.championSpawnSec(), tolerance, req.gameTime());
     }
 
-    private void checkBoss(String name, Double spawn, Double kill, double spawnSec, double minKillSec,
+    /**
+     * 보스전(라이벌 2마리, 챔피언 3마리) 동안 게임 시계가 멈추므로 처치 시간은 출현 시간과 같을 수 있다.
+     * 처치 시간은 보스를 모두 잡은 시점. 보스전에 실제로 걸린 시간은 서버 경과 시간 검사(INVALID_TIME)에 포함된다.
+     */
+    private void checkBoss(String name, Double spawn, Double kill, double spawnSec,
                            double tolerance, double gameTime) {
         if (spawn == null && kill != null)
             fail(ErrorCode.INVALID_BOSS, name + " 출현 없이 처치 기록");
@@ -110,8 +115,8 @@ public class RoundValidator {
         if (kill != null) {
             if (kill > gameTime)
                 fail(ErrorCode.INVALID_BOSS, "%s 처치 %.1f > gameTime %.1f".formatted(name, kill, gameTime));
-            if (kill - spawn < minKillSec)
-                fail(ErrorCode.INVALID_BOSS, "%s 처치 소요 %.1f초 < 최소 %.0f초".formatted(name, kill - spawn, minKillSec));
+            if (kill < spawn)
+                fail(ErrorCode.INVALID_BOSS, "%s 처치 %.1f < 출현 %.1f".formatted(name, kill, spawn));
         }
     }
 
@@ -146,7 +151,15 @@ public class RoundValidator {
             fail(ErrorCode.INVALID_MONSTERBALL, "earned %d > 최대 %.0f".formatted(m.earned(), maxEarned));
     }
 
-    // INVALID_UNLOCK (개수 제한은 @Size → INVALID_REQUEST)
+    // INVALID_POCKET_DOLLAR: 주운 포켓달러(ShardBonus 적용 전)가 처치 수·보스 기준 최대치를 넘는지
+    private void validatePocketDollar(RoundEndRequest req, RoundRuleProperties rule) {
+        double max = req.killCount() * rule.maxDollarPerKill() * rule.maxDollarMultiplier()
+                + bossReward(req.bossTime(), rule.rivalDollar(), rule.championDollar()) * rule.maxDollarMultiplier();
+        if (req.pocketDollar() > max)
+            fail(ErrorCode.INVALID_POCKET_DOLLAR, "pocketDollar %d > 최대 %.0f".formatted(req.pocketDollar(), max));
+    }
+
+    // INVALID_UNLOCK (중복·마스터데이터에 없는 id)
     private void checkUnlock(String kind, List<Integer> ids, java.util.Set<Integer> known) {
         if (new HashSet<>(ids).size() != ids.size())
             fail(ErrorCode.INVALID_UNLOCK, kind + " 해금 목록 중복 " + ids);
