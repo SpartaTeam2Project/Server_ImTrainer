@@ -129,6 +129,9 @@ public class RoundValidator {
 
     // INVALID_EXP, INVALID_LEVEL
     private void validateExpAndLevel(RoundEndRequest req, RoundRuleProperties rule, PlayerBaseData base) {
+        if (!rule.expCheckEnabled()) {
+            return;   // 임시: 클라 레벨 공식과 맞출 때까지 검증 안 함
+        }
         double maxExp = req.killCount() * rule.maxExpPerKill() * rule.maxExpMultiplier()
                 + bossReward(req.bossTime(), rule.rivalExp(), rule.championExp()) * rule.maxExpMultiplier();
         if (req.totalExp() > maxExp)
