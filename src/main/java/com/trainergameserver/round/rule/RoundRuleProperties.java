@@ -2,6 +2,7 @@ package com.trainergameserver.round.rule;
 
 import jakarta.validation.constraints.Positive;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
 
 /**
@@ -25,8 +26,11 @@ public record RoundRuleProperties(
         @Positive double rivalExp,
         @Positive double rivalBall,
         @Positive double rivalDollar,
+
         @Positive double championSpawnSec,    // 챔피언전 시작 시간 (클라와 같은 값이어야 함). 챔피언전은 3마리, 처치 = 클리어
         @Positive double championExp,
         @Positive double championBall,
-        @Positive double championDollar) {
+        @Positive double championDollar,
+        // 경험치·레벨 검증(INVALID_EXP, INVALID_LEVEL) 사용 여부. 클라와 레벨 공식을 맞출 때까지 false
+        @DefaultValue("true") boolean expCheckEnabled) {
 }
