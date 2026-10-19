@@ -32,5 +32,6 @@ public record RoundRuleProperties(
         @Positive double championBall,
         @Positive double championDollar,
         // 경험치·레벨 검증(INVALID_EXP, INVALID_LEVEL) 사용 여부. 클라와 레벨 공식을 맞출 때까지 false
-        @DefaultValue("true") boolean expCheckEnabled) {
+        @DefaultValue("true") boolean expCheckEnabled,
+        @DefaultValue("true") boolean entryCheckEnabled) {
 }
