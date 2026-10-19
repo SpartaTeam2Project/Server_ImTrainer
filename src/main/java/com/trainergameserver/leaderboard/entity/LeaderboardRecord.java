@@ -37,6 +37,10 @@ public class LeaderboardRecord {
     @Column(nullable = false, length = 50)
     private String pokemonEntry;
 
+    /** 최고 기록을 세운 판(클리어)의 최종 레벨 (V7) */
+    @Column(nullable = false)
+    private Integer level;
+
     public static LeaderboardRecord of(String trainerId, RoundEndRequest req, LocalDateTime now) {
         LeaderboardRecord r = new LeaderboardRecord();
         r.trainerId = trainerId;
@@ -54,6 +58,7 @@ public class LeaderboardRecord {
     private void apply(RoundEndRequest req, LocalDateTime now) {
         this.killCount = req.killCount();
         this.recordedAt = now;
+        this.level = req.level();
         this.pokemonEntry = req.pokemonEntry().stream().map(String::valueOf).collect(Collectors.joining(","));
     }
 

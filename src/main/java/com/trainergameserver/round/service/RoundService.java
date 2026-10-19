@@ -17,6 +17,7 @@ import com.trainergameserver.player.service.CurrencyService;
 import com.trainergameserver.player.service.PlayerService;
 import com.trainergameserver.round.dto.RoundEndRequest;
 import com.trainergameserver.round.dto.RoundEndResponse;
+import com.trainergameserver.round.dto.RoundResult;
 import com.trainergameserver.round.entity.RoundViolation;
 import com.trainergameserver.round.repository.RoundViolationRepository;
 import com.trainergameserver.round.rule.RoundRuleProperties;
@@ -147,8 +148,10 @@ public class RoundService {
             throw e;
         }
 
-        // 4) 결과 검증 통과 시에만
-        leaderboardService.record(username, request, LocalDateTime.now());
+        // 4) 결과 검증 통과 시에만. 리더보드는 클리어(챔피언 처치)한 판만 기록
+        if (request.result() == RoundResult.CLEAR) {
+            leaderboardService.record(username, request, LocalDateTime.now());
+        }
 
         // 포켓달러: CLEAR/DEAD 모두, 주운 양 × (1 + ShardBonus)
         long reward = rewardOf(request.pocketDollar(), shardBonus(player));

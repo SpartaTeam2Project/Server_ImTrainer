@@ -67,6 +67,6 @@ public class LeaderboardService {
      */
     private LeaderboardEntry toEntry(int rank, LeaderboardRow row) {
         LeaderboardRecord r = row.record();
-        return new LeaderboardEntry(rank, row.nickname(), r.getKillCount(), r.pokemonEntryIds());
+        return new LeaderboardEntry(rank, row.nickname(), r.getLevel(),r.getKillCount(), r.pokemonEntryIds());
     }
 }
