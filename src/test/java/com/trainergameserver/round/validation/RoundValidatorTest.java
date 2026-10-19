@@ -265,6 +265,20 @@ class RoundValidatorTest {
                 .satisfies(e -> assertThat(((RoundValidationException) e).getReason()).contains("killCount 40000"));
     }
 
+    @Test
+    @DisplayName("엔트리 검증을 끄면 보유하지 않은 포켓몬이어도 통과")
+    void entryCheckDisabled() {
+        RoundRuleProperties off = new RoundRuleProperties(
+                3, 20, 30, 3, 10, 2.0, 2.0, 2.0,
+                600, 500, 50, 100,
+                1200, 1500, 150, 300,
+                true, false);
+        RoundEndRequest req = request(r -> r.entry = List.of(25, 150));
+        assertThatCode(() -> validator.validate(req,
+                new RoundValidationContext(SERVER_ELAPSED, off, BASE, OWNED, KNOWN_TRAINERS, KNOWN_MONSTERS)))
+                .doesNotThrowAnyException();
+    }
+
     // ===== 헬퍼 =====
 
     /** 기본값 = 정상 클리어 기록 */
