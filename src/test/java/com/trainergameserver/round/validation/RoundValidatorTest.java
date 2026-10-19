@@ -29,7 +29,7 @@ class RoundValidatorTest {
     private static final RoundRuleProperties RULE = new RoundRuleProperties(
             3, 20, 30, 3, 10, 2.0, 2.0, 2.0,
             600, 500, 50, 100,
-            1200, 1500, 150, 300. true);
+            1200, 1500, 150, 300, true);
 
     /** 레벨 곡선만 의미 있음: baseRequiredXp 5, requiredGrowth 1.25 */
     private static final PlayerBaseData BASE = new PlayerBaseData(
