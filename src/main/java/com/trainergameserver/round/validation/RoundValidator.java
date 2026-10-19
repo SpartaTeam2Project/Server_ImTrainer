@@ -175,6 +175,9 @@ public class RoundValidator {
     // INVALID_ENTRY (개수 제한은 @Size → INVALID_REQUEST)
     // 엔트리는 이미 보유한 포켓몬 + 이번 라운드에서 해금한 포켓몬 중에서만 허용
     private void validateEntry(RoundEndRequest req, RoundValidationContext ctx) {
+        if (!ctx.rule().entryCheckEnabled()) {
+            return;   // 임시: 엔트리 규칙을 클라와 맞출 때까지 검증 안 함
+        }
         List<Integer> entry = req.pokemonEntry();
         if (new HashSet<>(entry).size() != entry.size())
             fail(ErrorCode.INVALID_ENTRY, "중복 " + entry);

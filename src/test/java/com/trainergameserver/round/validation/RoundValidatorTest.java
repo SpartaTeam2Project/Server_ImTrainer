@@ -29,7 +29,7 @@ class RoundValidatorTest {
     private static final RoundRuleProperties RULE = new RoundRuleProperties(
             3, 20, 30, 3, 10, 2.0, 2.0, 2.0,
             600, 500, 50, 100,
-            1200, 1500, 150, 300, true);
+            1200, 1500, 150, 300, true, true);
 
     /** 레벨 곡선만 의미 있음: baseRequiredXp 5, requiredGrowth 1.25 */
     private static final PlayerBaseData BASE = new PlayerBaseData(
@@ -263,6 +263,20 @@ class RoundValidatorTest {
         assertThatThrownBy(() -> validate(request(r -> r.killCount = 40000), SERVER_ELAPSED))
                 .isInstanceOf(RoundValidationException.class)
                 .satisfies(e -> assertThat(((RoundValidationException) e).getReason()).contains("killCount 40000"));
+    }
+
+    @Test
+    @DisplayName("엔트리 검증을 끄면 보유하지 않은 포켓몬이어도 통과")
+    void entryCheckDisabled() {
+        RoundRuleProperties off = new RoundRuleProperties(
+                3, 20, 30, 3, 10, 2.0, 2.0, 2.0,
+                600, 500, 50, 100,
+                1200, 1500, 150, 300,
+                true, false);
+        RoundEndRequest req = request(r -> r.entry = List.of(25, 150));
+        assertThatCode(() -> validator.validate(req,
+                new RoundValidationContext(SERVER_ELAPSED, off, BASE, OWNED, KNOWN_TRAINERS, KNOWN_MONSTERS)))
+                .doesNotThrowAnyException();
     }
 
     // ===== 헬퍼 =====
