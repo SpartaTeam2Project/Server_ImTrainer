@@ -1,4 +1,4 @@
-# 로컬 개발용: 서버 + MySQL을 함께 띄웁니다.
+# 로컬 개발용: 서버 + MySQL + Redis를 함께 띄웁니다.
 # 실행 전: ./gradlew bootJar  (jar를 먼저 만들어야 이미지에 들어갑니다)
 # 실행:    docker compose up --build
 services:
@@ -18,20 +18,37 @@ services:
       timeout: 3s
       retries: 20
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"          # 기존 Redis(6379)와 겹치지 않게 6380으로 노출
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
   app:
     build: .
     depends_on:
       mysql:
         condition: service_healthy   # MySQL이 준비된 뒤에 서버 시작
+      redis:
+        condition: service_healthy   # Redis가 준비된 뒤에 서버 시작
     ports:
       - "8080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: local
-      # compose 안에서는 localhost가 아니라 서비스 이름(mysql)으로 접속
+      # compose 안에서는 localhost가 아니라 서비스 이름(mysql, redis)으로 접속
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/game?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
+      REDIS_HOST: redis              # 공통 설정의 ${REDIS_HOST:localhost}로 들어감
+      REDIS_PORT: 6379               # 컨테이너 안 포트는 항상 6379
       JWT_SECRET: ${JWT_SECRET}      # 같은 폴더의 .env 파일에서 읽음
 
 volumes:
   mysql-data:
+  redis-data:
