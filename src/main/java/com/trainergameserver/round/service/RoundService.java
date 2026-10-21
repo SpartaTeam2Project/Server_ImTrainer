@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -51,6 +52,9 @@ public class RoundService {
     /** 종료 요청이 오지 않은 라운드(튕김, 강제 종료)를 치우는 청소용 시간. 게임을 멈추고 오래 자리를 비우는 경우까지 고려해 24시간 */
     /** 트레이닝 마스터데이터의 포켓달러 보너스 키 (training.json id 5) */
     private static final String SHARD_BONUS_KEY = "ShardBonus";
+
+    /** 위반 기록의 요청을 JSON 으로 저장 (복구할 때 다시 읽음) */
+    static final JsonMapper JSON = JsonMapper.builder().build();
 
     private static final Duration ROUND_TTL = Duration.ofHours(24);
     private final PlayerService playerService;
@@ -121,14 +125,12 @@ public class RoundService {
         // 재화 지급과 같은 행 잠금. 같은 계정의 트레이닝 구매와 동시에 와도 하나씩 처리된다
         Player player = playerRepository.findForUpdate(user.getId()).orElseThrow();
 
-        RoundValidationContext ctx = new RoundValidationContext(serverElapsedSec,
-                roundRule, playerBaseTable.current(), Set.copyOf(player.getOwnedMonsterIds()),
-                knownTrainerIds(), knownMonsterIds());
+        RoundValidationContext ctx = contextFor(player, serverElapsedSec);
         // 1) 해금 검증: 확실한 검사라 실패하면 해금도 하지 않는다
         try {
             roundValidator.validateUnlocks(request, ctx);
         } catch (RoundValidationException e) {
-            recordViolation(user.getId(), username, e, false, serverElapsedSec, request);
+            recordViolation(user.getId(), username, e, false, serverElapsedSec, request, player);
             throw e;
         }
 
@@ -144,7 +146,7 @@ public class RoundService {
         try {
             roundValidator.validateResult(request, ctx);
         } catch (RoundValidationException e) {
-            recordViolation(user.getId(), username, e, true, serverElapsedSec, request);
+            recordViolation(user.getId(), username, e, true, serverElapsedSec, request, player);
             throw e;
         }
 
@@ -154,7 +156,7 @@ public class RoundService {
         }
 
         // 포켓달러: CLEAR/DEAD 모두, 주운 양 × (1 + ShardBonus)
-        long reward = rewardOf(request.pocketDollar(), shardBonus(player));
+        long reward = rewardFor(player, request);
         if (reward > 0) {
             currencyService.grant(user.getId(), CurrencyService.POCKET_DOLLAR, reward);
         }
@@ -163,11 +165,23 @@ public class RoundService {
 
     /** 검증 실패를 로그와 DB(round_violations)에 남긴다. 응답은 공통 문구로 나간다 */
     private void recordViolation(Long userId, String username, RoundValidationException e, boolean unlockApplied,
-                                 double serverElapsedSec, RoundEndRequest request) {
+                                 double serverElapsedSec, RoundEndRequest request, Player player) {
         log.warn("라운드 검증 실패 user={} code={} reason=[{}] unlockApplied={} serverElapsed={}s request={}",
                 username, e.getCode(), e.getReason(), unlockApplied, "%.1f".formatted(serverElapsedSec), request);
         roundViolationRepository.save(RoundViolation.of(userId, e.getCode().name(), e.getReason(), unlockApplied,
-                serverElapsedSec, request.toString(), LocalDateTime.now()));
+                serverElapsedSec, JSON.writeValueAsString(request), rewardFor(player, request), LocalDateTime.now()));
+    }
+
+    /** 검증 컨텍스트. 복구할 때도 같은 기준으로 다시 검증하려고 패키지 안에 공개 */
+    RoundValidationContext contextFor(Player player, double serverElapsedSec) {
+        return new RoundValidationContext(serverElapsedSec,
+                roundRule, playerBaseTable.current(), Set.copyOf(player.getOwnedMonsterIds()),
+                knownTrainerIds(), knownMonsterIds());
+    }
+
+    /** 이 판의 포켓달러 지급액 (현재 ShardBonus 레벨 기준) */
+    long rewardFor(Player player, RoundEndRequest request) {
+        return rewardOf(request.pocketDollar(), shardBonus(player));
     }
 
     private Set<Integer> knownTrainerIds() {

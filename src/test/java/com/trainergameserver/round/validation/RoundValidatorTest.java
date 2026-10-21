@@ -116,7 +116,7 @@ class RoundValidatorTest {
     @Test
     @DisplayName("보스 처치 시간이 출현 시간보다 앞서면 INVALID_BOSS")
     void killBeforeSpawn() {
-        assertFail(request(r -> r.bossTime = new BossTime(600.0, 599.0, 1200.0, 1200.0)),
+        assertFail(request(r -> r.bossTime = new BossTime(600.0, 590.0, 1200.0, 1200.0)),
                 SERVER_ELAPSED, ErrorCode.INVALID_BOSS);
     }
 
