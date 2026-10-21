@@ -98,6 +98,7 @@ public class RoundValidator {
     /**
      * 보스전(라이벌 2마리, 챔피언 3마리) 동안 게임 시계가 멈추므로 처치 시간은 출현 시간과 같을 수 있다.
      * 처치 시간은 보스를 모두 잡은 시점. 보스전에 실제로 걸린 시간은 서버 경과 시간 검사(INVALID_TIME)에 포함된다.
+     * 클라는 gameTime 과 bossTime 의 소수점 처리가 달라 같은 시각도 조금씩 어긋나므로, 비교에 오차(tolerance)를 둔다.
      */
     private void checkBoss(String name, Double spawn, Double kill, double spawnSec,
                            double tolerance, double gameTime) {
@@ -109,14 +110,14 @@ public class RoundValidator {
         if (spawn != null) {
             if (Math.abs(spawn - spawnSec) > tolerance)
                 fail(ErrorCode.INVALID_BOSS, "%s 출현 %.1f, 예정 %.0f".formatted(name, spawn, spawnSec));
-            if (spawn > gameTime)
-                fail(ErrorCode.INVALID_BOSS, "%s 출현 %.1f > gameTime %.1f".formatted(name, spawn, gameTime));
+            if (spawn > gameTime + tolerance)
+                fail(ErrorCode.INVALID_BOSS, "%s 출현 %.3f > gameTime %.3f".formatted(name, spawn, gameTime));
         }
         if (kill != null) {
-            if (kill > gameTime)
-                fail(ErrorCode.INVALID_BOSS, "%s 처치 %.1f > gameTime %.1f".formatted(name, kill, gameTime));
-            if (kill < spawn)
-                fail(ErrorCode.INVALID_BOSS, "%s 처치 %.1f < 출현 %.1f".formatted(name, kill, spawn));
+            if (kill > gameTime + tolerance)
+                fail(ErrorCode.INVALID_BOSS, "%s 처치 %.3f > gameTime %.3f".formatted(name, kill, gameTime));
+            if (kill < spawn - tolerance)
+                fail(ErrorCode.INVALID_BOSS, "%s 처치 %.3f < 출현 %.3f".formatted(name, kill, spawn));
         }
     }
 
